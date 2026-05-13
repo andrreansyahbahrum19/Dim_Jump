@@ -1,0 +1,2072 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Dimsum Gacoan 🥟</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'Guess Who';
+      src: local('Guess Who'), local('GuessWho');
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+    body {
+      background: #111827;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: 'Arial Rounded MT Bold', 'Arial', sans-serif;
+    }
+
+    /* ===== GAME WRAPPER — maintains 9:16 ===== */
+    #game-wrapper {
+      position: relative;
+      width: min(100vw, calc(100vh * 9 / 16));
+      height: min(100vh, calc(100vw * 16 / 9));
+      overflow: hidden;
+    }
+
+    #game-wrapper.shake {
+      animation: sceneShake 0.32s ease-out;
+    }
+
+    /* ===== GAME SCENE — fixed 1080×1920, scaled via transform ===== */
+    #game-scene {
+      position: absolute;
+      width: 1080px;
+      height: 1920px;
+      transform-origin: top left;
+      left: 0; top: 0;
+    }
+
+    /* ==================== BACKGROUND (full 1080×1920 SVG) ==================== */
+    #bg-full {
+      position: absolute;
+      left: 0; top: 0;
+      width: 1080px;
+      height: 1920px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    #bg-floor-overlay {
+      position: absolute;
+      left: 0;
+      top: 1304px;
+      width: 1080px;
+      height: 616px;
+      z-index: 35;
+      pointer-events: none;
+    }
+
+    /* ==================== TOP HUD ==================== */
+    #hud-lives {
+      position: absolute;
+      left: 50px;
+      top: 46px;
+      z-index: 50;
+      width: 191px;
+      height: 64px;
+    }
+
+    #hud-lives-badge {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+    }
+
+    #hearts-overlay {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      left: 72px;
+      right: 12px;
+      justify-content: center;
+      display: flex;
+      gap: 7px;
+      align-items: center;
+    }
+
+    .heart-icon {
+      width: 25px;
+      height: auto;
+      filter: none;
+      transition: filter 0.3s, transform 0.3s;
+    }
+
+    .heart-icon.lost {
+      filter: grayscale(1) opacity(0.25);
+      transform: scale(0.85);
+    }
+
+    #hud-score {
+      position: absolute;
+      right: 50px;
+      top: 118px;
+      z-index: 50;
+      width: 191px;
+      height: 64px;
+    }
+
+    #hud-score-badge {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+    }
+
+    #score-value {
+      position: absolute;
+      top: 53%;
+      transform: translateY(-50%);
+      left: 68px;
+      right: 11px;
+      text-align: center;
+      font-size: 31px;
+      font-weight: 900;
+      color: #0d2d6e;
+      letter-spacing: 0;
+      font-family: 'Guess Who', 'Lilita One', 'Arial Black', sans-serif;
+      text-shadow: 0 2px 0 rgba(255,255,255,0.4);
+    }
+
+    #score-value.bump {
+      animation: scoreBump 0.28s ease-out;
+    }
+
+    #hud-time {
+      position: absolute;
+      left: 50%;
+      top: 34px;
+      transform: translateX(-50%);
+      z-index: 50;
+      width: 259px;
+      height: 87px;
+    }
+
+    #hud-time-badge,
+    #hud-best-badge {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+    }
+
+    #timer-value {
+      position: absolute;
+      top: 53%;
+      transform: translateY(-50%);
+      left: 92px;
+      right: 18px;
+      text-align: center;
+      font-size: 36px;
+      font-weight: 900;
+      color: #0d2d6e;
+      letter-spacing: 0;
+      font-family: 'Guess Who', 'Lilita One', 'Arial Black', sans-serif;
+      text-shadow: 0 2px 0 rgba(255,255,255,0.4);
+    }
+
+    #hud-best {
+      position: absolute;
+      right: 50px;
+      top: 46px;
+      z-index: 50;
+      width: 191px;
+      height: 64px;
+    }
+
+    #best-value {
+      position: absolute;
+      top: 53%;
+      transform: translateY(-50%);
+      left: 68px;
+      right: 11px;
+      text-align: center;
+      font-size: 31px;
+      font-weight: 900;
+      color: #0d2d6e;
+      letter-spacing: 0;
+      font-family: 'Guess Who', 'Lilita One', 'Arial Black', sans-serif;
+      text-shadow: 0 2px 0 rgba(255,255,255,0.4);
+    }
+
+    /* ==================== MAIN FOOD ITEM ==================== */
+    #food-item-container {
+      position: absolute;
+      left: 388px;
+      top: 1508px;
+      width: 305px;
+      height: 305px;
+      z-index: 40;
+      transition: transform 0.12s ease-out;
+    }
+
+    #food-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: none;
+      animation: foodIdle 1.45s ease-in-out infinite;
+    }
+
+    /* shadow under food */
+    #food-shadow {
+      position: absolute;
+      left: 408px;
+      top: 1714px;
+      width: 264px;
+      height: 98px;
+      z-index: 38;
+      transform-origin: center center;
+      will-change: transform, opacity, left;
+    }
+
+    /* ==================== TRAJECTORY LINE ==================== */
+    #trajectory-svg {
+      position: absolute;
+      left: 0; top: 0;
+      width: 1080px;
+      height: 1920px;
+      z-index: 49;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s ease-out;
+    }
+
+    #trajectory-svg.show {
+      opacity: 1;
+    }
+
+    /* ==================== WADAH DIMSUM (container) ==================== */
+    #container-area {
+      position: absolute;
+      left: 414px;
+      top: 542px;
+      width: 180px;
+      height: 190px;
+      z-index: 45;   /* di depan projectile (z=40) */
+    }
+
+    #container-area.intro-slide {
+      animation: containerSlideIn 1.15s cubic-bezier(.18,.86,.18,1) forwards;
+    }
+
+    #container-area.intro-ready {
+      transform: translateX(820px);
+    }
+
+    #container-area.hit-pulse {
+      animation: hitPulse 0.28s ease-out;
+    }
+
+    #container-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: none;
+      animation: basketIdle 1.8s ease-in-out infinite;
+    }
+
+    /* filled dimsum slots inside container */
+    #container-slots {
+      position: absolute;
+      top: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      gap: 0;
+      z-index: 46;
+      pointer-events: none;
+    }
+
+    .slot {
+      width: 62px;
+      height: 63px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+
+    .slot.filled {
+      background: none;
+      border: none;
+    }
+
+    .slot.filled img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* shadow under container */
+    #container-shadow {
+      position: absolute;
+      left: 396px;
+      top: 612px;
+      width: 214px;
+      height: 120px;
+      z-index: 28;
+    }
+
+    #container-shadow.intro-slide {
+      animation: shadowSlideIn 1.15s cubic-bezier(.18,.86,.18,1) forwards;
+    }
+
+    #container-shadow.intro-ready {
+      opacity: 0;
+      transform: translateX(820px);
+    }
+
+    /* ==================== JOYSTICK ==================== */
+    #joystick-base {
+      position: absolute;
+      left: 414px;  /* cx=540 - r=126 */
+      top: 1590px;  /* cy=1716 - r=126 */
+      width: 252px;
+      height: 252px;
+      z-index: 60;
+      display: none;
+    }
+
+    #joystick-knob {
+      position: absolute;
+      left: 488px;  /* cx=540.5 - r=52.5 */
+      top: 1664px;  /* cy=1716.5 - r=52.5 */
+      width: 105px;
+      height: 105px;
+      z-index: 61;
+      cursor: pointer;
+      transition: left 0.16s cubic-bezier(.2,1.1,.32,1), top 0.16s cubic-bezier(.2,1.1,.32,1);
+      display: none;
+    }
+
+    #joystick-knob-img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+
+    /* Aiming indicator line from knob */
+    #aim-line {
+      position: absolute;
+      left: 0; top: 0;
+      width: 1080px;
+      height: 1920px;
+      pointer-events: none;
+      z-index: 49;
+      opacity: 0;
+      transition: opacity 0.12s ease-out;
+    }
+
+    #aim-line.show {
+      opacity: 0;
+    }
+
+    /* ==================== COIN FLY ANIMATION ==================== */
+    .flying-coin {
+      position: absolute;
+      pointer-events: none;
+      z-index: 200;
+      object-fit: contain;
+      transform-origin: center center;
+      will-change: transform, opacity;
+    }
+
+    @keyframes coinBurstIn {
+      0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+      70%  { transform: scale(1.2) rotate(5deg);  opacity: 1; }
+      100% { transform: scale(1)   rotate(0deg);  opacity: 1; }
+    }
+
+    @keyframes coinFlyArc {
+      0%   { opacity: 1; }
+      80%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+
+    /* Wrapper popup centered */
+    #coin-popup-wrap {
+      position: absolute;
+      pointer-events: none;
+      z-index: 210;
+      left: 50%;
+      top: 820px;
+      transform: translate(-50%, 0) scale(0);
+      transform-origin: center bottom;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      transition: transform 0.28s cubic-bezier(.18,.86,.32,1.35), opacity 0.2s ease-out;
+      opacity: 0;
+    }
+
+    #coin-popup-wrap.show {
+      transform: translate(-50%, 0) scale(1);
+      opacity: 1;
+    }
+
+    #coin-popup-wrap.hide {
+      transform: translate(-50%, -30px) scale(0.8);
+      opacity: 0;
+      transition: transform 0.14s ease-in, opacity 0.12s ease-in;
+    }
+
+    #coin-popup-img {
+      width: 148px;
+      height: auto;
+      filter: drop-shadow(0 8px 24px rgba(255,180,0,0.7));
+    }
+
+    #coin-popup-badge {
+      position: relative;
+      width: 282px;
+      height: auto;
+    }
+
+    #coin-popup-badge img.badge-bg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    #coin-popup-badge .badge-text {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-family: 'Guess Who', 'Lilita One', 'Arial Black', sans-serif;
+      font-size: 48px;
+      font-weight: 900;
+      color: #0d3a6e;
+      text-shadow: 0 2px 0 rgba(255,255,255,0.5);
+      letter-spacing: 1px;
+    }
+
+    #coin-popup-badge .badge-coin {
+      width: 46px;
+      height: auto;
+    }
+
+    /* ==================== AIM DOT ==================== */
+    #aim-dot {
+      position: absolute;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      border: 7px solid rgba(255, 212, 59, 0.96);
+      background:
+        radial-gradient(circle, rgba(255,255,255,0.95) 0 7px, transparent 8px),
+        radial-gradient(circle, rgba(255,212,59,0.18) 0 48%, transparent 50%);
+      box-shadow: 0 0 22px rgba(255, 212, 59, 0.95), inset 0 0 16px rgba(255,212,59,0.45);
+      z-index: 49;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.12s ease-out;
+    }
+
+    #aim-dot::before,
+    #aim-dot::after {
+      content: "";
+      position: absolute;
+      background: rgba(255, 212, 59, 0.96);
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 999px;
+    }
+
+    #aim-dot::before {
+      width: 112px;
+      height: 6px;
+    }
+
+    #aim-dot::after {
+      width: 6px;
+      height: 112px;
+    }
+
+    #aim-dot.show {
+      opacity: 1;
+    }
+
+    .hit-label,
+    .miss-label,
+    .combo-label {
+      position: absolute;
+      z-index: 120;
+      pointer-events: none;
+      font-family: 'Guess Who', 'Lilita One', 'Arial Black', sans-serif;
+      font-weight: 900;
+      letter-spacing: 0;
+      animation: feedbackPop 0.7s ease-out forwards;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    .hit-label {
+      color: #fff176;
+      font-size: 54px;
+    }
+
+    .miss-label {
+      color: #ffefef;
+      font-size: 46px;
+    }
+
+    .combo-label {
+      color: #fff;
+      font-size: 40px;
+      animation: comboPop 0.85s ease-out forwards;
+    }
+
+    .hit-particle {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      z-index: 115;
+      pointer-events: none;
+      background: #fff176;
+      box-shadow: 0 0 14px rgba(255,241,118,0.95);
+      animation: particleBurst 0.65s ease-out forwards;
+    }
+
+    .hit-particle.star {
+      border-radius: 0;
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+      width: 26px;
+      height: 26px;
+    }
+
+    @keyframes containerSlideIn {
+      0% { transform: translateX(820px); }
+      100% { transform: translateX(0); }
+    }
+
+    @keyframes shadowSlideIn {
+      0% { transform: translateX(820px); opacity: 0; }
+      100% { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes hitPulse {
+      0%   { transform: scale(1);    filter: brightness(1); }
+      25%  { transform: scale(1.16); filter: brightness(1.4); }
+      55%  { transform: scale(0.95); filter: brightness(1.1); }
+      78%  { transform: scale(1.04); filter: brightness(1); }
+      100% { transform: scale(1);    filter: brightness(1); }
+    }
+
+    .hit-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 5px solid rgba(255, 235, 80, 0.92);
+      pointer-events: none;
+      z-index: 110;
+      animation: ringExpand 0.45s ease-out forwards;
+    }
+
+    @keyframes ringExpand {
+      0%   { width: 60px; height: 60px; opacity: 1;  transform: translate(-50%, -50%) scale(0.4); }
+      100% { width: 260px; height: 260px; opacity: 0; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .hit-flash {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,241,120,0.7) 0%, rgba(255,200,50,0) 70%);
+      pointer-events: none;
+      z-index: 109;
+      width: 200px;
+      height: 200px;
+      animation: flashFade 0.3s ease-out forwards;
+    }
+
+    @keyframes flashFade {
+      0%   { opacity: 1;  transform: translate(-50%, -50%) scale(0.5); }
+      100% { opacity: 0;  transform: translate(-50%, -50%) scale(1.4); }
+    }
+
+    @keyframes feedbackPop {
+      0% { opacity: 0; transform: translate(-50%, 12px) scale(0.5); }
+      20% { opacity: 1; transform: translate(-50%, 0) scale(1.12); }
+      100% { opacity: 0; transform: translate(-50%, -72px) scale(0.9); }
+    }
+
+    @keyframes foodIdle {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-8px) rotate(2deg); }
+    }
+
+    @keyframes basketIdle {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-4px) scale(1.015); }
+    }
+
+    @keyframes sceneShake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-10px, 5px); }
+      40% { transform: translate(9px, -4px); }
+      60% { transform: translate(-6px, 3px); }
+      80% { transform: translate(4px, -2px); }
+    }
+
+    @keyframes scoreBump {
+      0% { transform: translateY(-50%) scale(1); }
+      45% { transform: translateY(-50%) scale(1.18); }
+      100% { transform: translateY(-50%) scale(1); }
+    }
+
+    @keyframes comboPop {
+      0% { opacity: 0; transform: translate(-50%, 10px) scale(0.72); }
+      28% { opacity: 1; transform: translate(-50%, 0) scale(1.08); }
+      100% { opacity: 0; transform: translate(-50%, -58px) scale(1); }
+    }
+
+    @keyframes particleBurst {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.6);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.1);
+      }
+    }
+
+    /* ==================== GAME OVER / WIN OVERLAY ==================== */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+    }
+
+    #overlay.show { display: flex; }
+
+    #overlay-title {
+      font-size: 100px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      margin-bottom: 40px;
+    }
+
+    #overlay-score {
+      font-size: 60px;
+      color: #FFD700;
+      margin-bottom: 18px;
+    }
+
+    #overlay-time {
+      font-size: 46px;
+      color: #ffffff;
+      margin-bottom: 70px;
+      font-weight: 800;
+      text-shadow: 0 3px 12px rgba(0,0,0,0.45);
+    }
+
+    #btn-restart {
+      background: linear-gradient(135deg, #FF6B35, #FF3366);
+      border: none;
+      border-radius: 60px;
+      padding: 40px 120px;
+      font-size: 60px;
+      font-weight: 900;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(255,80,80,0.5);
+    }
+
+    /* ==================== LAUNCH BUTTON (visible on desktop) ==================== */
+    #launch-btn {
+      position: absolute;
+      right: 60px;
+      top: 1680px;
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #FF6B35, #FF3366);
+      border: 6px solid rgba(255,255,255,0.4);
+      box-shadow: 0 8px 32px rgba(255,80,80,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 62;
+      display: none;
+    }
+
+    #launch-btn-text {
+      font-size: 36px;
+      font-weight: 900;
+      color: white;
+      text-align: center;
+      line-height: 1.2;
+    }
+
+    /* ==================== FOOD COUNTER ==================== */
+    #food-counter {
+      position: absolute;
+      left: 60px;
+      top: 1680px;
+      z-index: 50;
+      display: none;
+    }
+
+    #food-counter-inner {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .counter-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.3);
+      border: 3px solid rgba(255,255,255,0.5);
+    }
+
+    .counter-dot.filled {
+      background: #FFD700;
+      border-color: #FFA500;
+    }
+
+    /* Label */
+    #food-counter-label {
+      color: rgba(255,255,255,0.7);
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    /* ==================== INSTRUCTION TEXT ==================== */
+    #instruction {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 28px;
+      color: rgba(255,255,255,0.6);
+      z-index: 50;
+      white-space: nowrap;
+    }
+    /* ==================== COVER SCREEN ==================== */
+    #cover-screen {
+      position: absolute;
+      left: 0; top: 0;
+      width: 1080px;
+      height: 1920px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      background: linear-gradient(175deg, #1a6fc4 0%, #0d3a8c 35%, #061d5c 65%, #030d30 100%);
+      transition: opacity 0.5s ease-out;
+      overflow: hidden;
+    }
+
+    /* Fallback decorative bg — hilang otomatis kalau cover-art berhasil load */
+    #cover-screen::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% 10%, rgba(100,180,255,0.25) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 20% 80%, rgba(255,100,180,0.15) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 35% at 85% 70%, rgba(255,180,60,0.12) 0%, transparent 55%);
+      pointer-events: none;
+    }
+
+    #cover-fallback-title {
+      position: absolute;
+      top: 22%;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      pointer-events: none;
+      z-index: 1;
+      white-space: nowrap;
+    }
+
+    #cover-fallback-title .brand {
+      font-family: 'Lilita One', 'Arial Black', sans-serif;
+      font-size: 72px;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 10px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      display: block;
+    }
+
+    #cover-fallback-title .game-title {
+      font-family: 'Guess Who', 'Lilita One', 'Arial Black', sans-serif;
+      font-size: 280px;
+      font-weight: 900;
+      line-height: 0.9;
+      display: block;
+      background: linear-gradient(170deg, #fff 0%, #ffe96b 40%, #ff6fd8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 12px 40px rgba(255,100,200,0.5));
+      letter-spacing: -4px;
+    }
+
+    #cover-fallback-title .game-sub {
+      font-family: 'Lilita One', 'Arial Black', sans-serif;
+      font-size: 80px;
+      color: rgba(255,255,255,0.75);
+      letter-spacing: 14px;
+      margin-top: 24px;
+      display: block;
+    }
+
+    /* Food decorations */
+    .cover-food {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      object-fit: contain;
+      pointer-events: none;
+      z-index: 1;
+      filter: drop-shadow(0 16px 40px rgba(0,0,0,0.35));
+    }
+
+    .cover-food.f1 { top: 8%;  left: -2%;  transform: rotate(-15deg); animation: floatFood 3.2s ease-in-out infinite; }
+    .cover-food.f2 { top: 6%;  right: -2%; transform: rotate(12deg);  animation: floatFood 2.8s ease-in-out infinite 0.5s; }
+    .cover-food.f3 { top: 32%; left: 4%;   transform: rotate(-8deg);  animation: floatFood 3.6s ease-in-out infinite 1s; }
+    .cover-food.f4 { top: 28%; right: 3%;  transform: rotate(18deg);  animation: floatFood 3.0s ease-in-out infinite 0.3s; }
+
+    @keyframes floatFood {
+      0%, 100% { transform: translateY(0)    rotate(var(--r, -10deg)); }
+      50%       { transform: translateY(-48px) rotate(var(--r, -10deg)); }
+    }
+
+    #cover-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #cover-art {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+
+    #cover-btn-wrap {
+      position: relative;
+      z-index: 2;
+      margin-bottom: 220px;
+      opacity: 0;
+      transform: translateY(80px);
+      transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(.18,.86,.32,1.2);
+    }
+
+    #cover-btn-wrap.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #btn-play {
+      width: 620px;
+      height: auto;
+      display: block;
+      cursor: pointer;
+      animation: btnPulse 1.4s ease-in-out infinite;
+      filter: drop-shadow(0 16px 48px rgba(255,60,140,0.7));
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #btn-play:active {
+      animation: none;
+      transform: scale(0.92);
+      filter: drop-shadow(0 8px 24px rgba(255,60,140,0.5));
+    }
+
+    @keyframes btnPulse {
+      0%, 100% { transform: scale(1)    translateY(0);    }
+      40%       { transform: scale(1.06) translateY(-14px); }
+      60%       { transform: scale(1.04) translateY(-10px); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+  <div id="game-scene">
+
+    <!-- ===== COVER SCREEN (inside game coordinate system 1080×1920) ===== -->
+    <div id="cover-screen">
+
+      <!-- Cover art (lo taruh file dimjump_cover.png di assets → langsung override fallback) -->
+      <img id="cover-art" src="assets/dimjump_cover.png" alt="Dim Jump"
+           onerror="this.style.display='none'">
+
+      <!-- PLAY button -->
+      <div id="cover-btn-wrap">
+        <img id="btn-play" src="assets/btn_play.svg" alt="PLAY">
+      </div>
+
+    </div>
+
+    <!-- ===== BACKGROUND FULL (restaurant + table + floor all-in-one) ===== -->
+    <img id="bg-full" src="assets/bg_fix.svg" alt="">
+    <img id="bg-floor-overlay" src="assets/bg_floor_overlay.svg" alt="">
+
+    <!-- ===== HUD LIVES (kiri) ===== -->
+    <div id="hud-lives">
+      <img id="hud-lives-badge" src="assets/hud_user.svg" alt="Lives">
+      <div id="hearts-overlay">
+        <img class="heart-icon" id="heart1" src="assets/Hati.svg" alt="❤">
+        <img class="heart-icon" id="heart2" src="assets/Hati.svg" alt="❤">
+        <img class="heart-icon" id="heart3" src="assets/Hati.svg" alt="❤">
+      </div>
+    </div>
+
+    <!-- ===== HUD SCORE (kanan) ===== -->
+    <div id="hud-score">
+      <img id="hud-score-badge" src="assets/hud_coin.svg" alt="Score">
+      <div id="score-value">0</div>
+    </div>
+
+    <!-- ===== HUD TIME (tengah) ===== -->
+    <div id="hud-time">
+      <img id="hud-time-badge" src="assets/hud_time.svg" alt="Time">
+      <div id="timer-value">00:00</div>
+    </div>
+
+    <!-- ===== HUD BEST COIN (piala) ===== -->
+    <div id="hud-best">
+      <img id="hud-best-badge" src="assets/hud_best.svg" alt="Best Score">
+      <div id="best-value">000</div>
+    </div>
+
+    <!-- ===== TRAJECTORY (SVG overlay) ===== -->
+    <svg id="trajectory-svg" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+      <path id="traj-path"
+            d="M540,1375 Q510,470 487,675"
+            stroke="#FFD43B" stroke-width="9"
+            stroke-linecap="round" stroke-dasharray="24 20"
+            fill="none" opacity="0.95"
+            filter="drop-shadow(0 0 10px rgba(255, 212, 59, 0.85))"/>
+    </svg>
+
+    <!-- ===== AIM LINE ===== -->
+    <svg id="aim-line" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+      <line id="aim-line-el"
+            x1="540" y1="1375"
+            x2="540" y2="1375"
+            stroke="rgba(255, 212, 59, 0.85)" stroke-width="7"
+            stroke-dasharray="18 16"/>
+    </svg>
+
+    <!-- ===== AIM DOT ===== -->
+    <div id="aim-dot" style="left:536px; top:1338px;"></div>
+
+    <!-- ===== FOOD ITEM SHADOW ===== -->
+    <img id="food-shadow" src="assets/Shadow makanan.svg" alt="">
+
+    <!-- ===== MAIN FOOD ITEM ===== -->
+    <div id="food-item-container">
+      <img id="food-img" src="assets/food_lumpia.png" alt="Dimsum">
+    </div>
+
+    <!-- ===== CONTAINER SHADOW ===== -->
+    <img id="container-shadow" class="intro-ready" src="assets/Shadow makanan.svg" alt="">
+
+    <!-- ===== WADAH DIMSUM ===== -->
+    <div id="container-area" class="intro-ready">
+      <img id="container-img" src="assets/Wadah dimsum.svg" alt="Wadah Dimsum">
+      <div id="container-slots">
+        <div class="slot" id="slot0"></div>
+        <div class="slot" id="slot1"></div>
+        <div class="slot" id="slot2"></div>
+      </div>
+    </div>
+
+    <!-- ===== JOYSTICK ===== -->
+    <img id="joystick-base" src="assets/Joystick_bawah.svg" alt="">
+    <div id="joystick-knob">
+      <img id="joystick-knob-img" src="assets/Joystick_atas.svg" alt="">
+    </div>
+
+    <!-- ===== LAUNCH BUTTON ===== -->
+    <div id="launch-btn">
+      <div id="launch-btn-text">LEMPAR!</div>
+    </div>
+
+    <!-- ===== FOOD COUNTER (dimsum in wadah) ===== -->
+    <div id="food-counter">
+      <div id="food-counter-label">Dalam wadah</div>
+      <div id="food-counter-inner">
+        <div class="counter-dot" id="dot0"></div>
+        <div class="counter-dot" id="dot1"></div>
+        <div class="counter-dot" id="dot2"></div>
+      </div>
+    </div>
+
+    <!-- ===== OVERLAY ===== -->
+    <!-- Coin popup: large coin + pill badge, centered, persistent toggle -->
+    <div id="coin-popup-wrap">
+      <img id="coin-popup-img" src="assets/coin_score.svg" alt="coin">
+      <div id="coin-popup-badge">
+        <img class="badge-bg" src="assets/coin_base.svg" alt="">
+        <div class="badge-text">
+          <img class="badge-coin" src="assets/coin_score.svg" alt="">
+          +100
+        </div>
+      </div>
+    </div>
+
+    <div id="overlay">
+      <div id="overlay-title">GAME OVER</div>
+      <div id="overlay-score">Skor: <span id="final-score">0</span></div>
+      <div id="overlay-time">Waktu: <span id="final-time">00:00</span></div>
+      <button id="btn-restart">Coba Lagi! 🥟</button>
+    </div>
+
+  </div><!-- /game-scene -->
+</div><!-- /game-wrapper -->
+
+<script>
+// =====================================================
+//  SCALE GAME TO FIT VIEWPORT
+// =====================================================
+function scaleGame() {
+  const wrapper = document.getElementById('game-wrapper');
+  const scene   = document.getElementById('game-scene');
+  const vw = wrapper.clientWidth;
+  const vh = wrapper.clientHeight;
+  const scale = Math.min(vw / 1080, vh / 1920);
+  scene.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', scaleGame);
+scaleGame();
+
+function readSavedNumber(key, fallback = 0) {
+  try {
+    const value = Number(localStorage.getItem(key));
+    return Number.isFinite(value) ? value : fallback;
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function saveNumber(key, value) {
+  try {
+    localStorage.setItem(key, String(value));
+  } catch (_) {}
+}
+
+function loadBestCoins() {
+  return readSavedNumber('dimsumGacoanBestCoins', 0);
+}
+
+function loadBestTime() {
+  return readSavedNumber('dimsumGacoanBestTime', 0);
+}
+
+// =====================================================
+//  GAME STATE
+// =====================================================
+const GAME_W  = 1080;
+const GAME_H  = 1920;
+const FOOD_TYPES = [
+  'assets/food_lumpia.png',   // lumpia goreng crispy
+  'assets/food_bola.png',     // bola goreng mayo
+  'assets/food_siumai.png',   // siu mai topping roe
+  'assets/food_mie.png'       // bola mie goreng
+];
+const WADAH_EMPTY = 'assets/wadah_v2_empty.png';
+const WADAH_FILLED = [
+  ['assets/wadah_v2_lumpia_1.png', 'assets/wadah_v2_lumpia_2.png', 'assets/wadah_v2_lumpia_3.png'],
+  ['assets/wadah_v2_bola_1.png', 'assets/wadah_v2_bola_2.png', 'assets/wadah_v2_bola_3.png'],
+  ['assets/wadah_v2_siumai_1.png', 'assets/wadah_v2_siumai_2.png', 'assets/wadah_v2_siumai_3.png'],
+  ['assets/wadah_v2_mie_1.png', 'assets/wadah_v2_mie_2.png', 'assets/wadah_v2_mie_3.png']
+];
+
+let score       = 0;
+let lives       = 3;
+let inWadah     = 0;     // dimsum in current wadah (0-3)
+let totalMade   = 0;     // completed wadah
+let gameActive  = false;
+let introActive = false;
+let isAiming    = false;
+let isThrowing  = false;
+let containerMoving = false;
+let foodQueue   = [];
+let currentFood = 0;
+let combo       = 0;
+let runStartTime = 0;
+let elapsedMs = 0;
+let bestCoins = loadBestCoins();
+let bestRunTime = loadBestTime();
+
+// Container movement
+let containerX  = 414;   // current x position (left edge)
+const CONTAINER_W    = 180;
+const CONTAINER_MIN  = 60;
+const CONTAINER_MAX  = GAME_W - CONTAINER_W - 60;
+let containerDir= 1;     // 1 = right, -1 = left
+let containerSpeed = 4;
+
+// Joystick state
+let aimStart = { x: 536, y: 1338 };
+let aimTarget = { x: 504, y: 618 };
+let aimDragStart = { x: 536, y: 1338 };
+let aimPower = 0;
+const AIM_MIN_POWER = 0.08;
+const THROW_TARGET_Y = 618;
+let audioCtx = null;
+let musicTimer = null;
+let musicStep = 0;
+
+// Food projectile — starts dari area lantai (y≈1375), dilempar ke atas
+let food = {
+  active: false,
+  x: 536, y: 1338,
+  vx: 0, vy: 0,
+  missSpin: 0,
+  missFeedbackShown: false,
+  missing: false
+};
+
+// DOM refs
+const scoreEl    = document.getElementById('score-value');
+const timerEl    = document.getElementById('timer-value');
+const bestEl     = document.getElementById('best-value');
+const hearts     = [document.getElementById('heart1'), document.getElementById('heart2'), document.getElementById('heart3')];
+const foodImgEl  = document.getElementById('food-img');
+const foodConEl  = document.getElementById('food-item-container');
+const contArea   = document.getElementById('container-area');
+const containerImgEl = document.getElementById('container-img');
+const trajPath   = document.getElementById('traj-path');
+const aimLineEl  = document.getElementById('aim-line-el');
+const aimDotEl   = document.getElementById('aim-dot');
+const overlay    = document.getElementById('overlay');
+const overlayTitle = document.getElementById('overlay-title');
+const finalScore = document.getElementById('final-score');
+const finalTime = document.getElementById('final-time');
+const slots      = [document.getElementById('slot0'), document.getElementById('slot1'), document.getElementById('slot2')];
+const dots       = [document.getElementById('dot0'),  document.getElementById('dot1'),  document.getElementById('dot2')];
+const joystickKnob = document.getElementById('joystick-knob');
+const launchBtn  = document.getElementById('launch-btn');
+const foodShadowEl = document.getElementById('food-shadow');
+
+// =====================================================
+//  INIT GAME
+// =====================================================
+function initGame() {
+  score = 0; lives = 3; inWadah = 0; totalMade = 0;
+  elapsedMs = 0;
+  runStartTime = 0;
+  combo = 0;
+  gameActive = false; introActive = true; isAiming = false; isThrowing = false; containerMoving = false;
+  containerX = 414;
+  containerDir = 1;
+  containerSpeed = 4;
+  currentFood = 0;
+  updateScore();
+  updateTimer();
+  updateBestDisplay();
+  updateHearts();
+  updateSlots();
+  updateDots();
+  hideAimGuide();
+  overlay.classList.remove('show');
+  setupContainerPosition();
+  spawnFood();
+  runIntro();
+}
+
+function runIntro() {
+  const shadow = document.getElementById('container-shadow');
+
+  contArea.classList.remove('intro-slide', 'hit-pulse');
+  shadow.classList.remove('intro-slide');
+
+  void contArea.offsetWidth;
+  contArea.classList.remove('intro-ready');
+  shadow.classList.remove('intro-ready');
+  contArea.classList.add('intro-slide');
+  shadow.classList.add('intro-slide');
+
+  setTimeout(() => {
+    introActive = false;
+    gameActive = true;
+    runStartTime = performance.now();
+    elapsedMs = 0;
+    updateTimer();
+    contArea.classList.remove('intro-slide');
+    shadow.classList.remove('intro-slide');
+    gameLoop();
+  }, 1650);
+}
+
+function setupContainerPosition() {
+  contArea.style.left = containerX + 'px';
+  const shadow = document.getElementById('container-shadow');
+  shadow.style.left = (containerX - 18) + 'px';
+}
+
+// =====================================================
+//  FOOD SPAWN
+// =====================================================
+function shuffleQueue() {
+  foodQueue = [...Array(8)].map((_, i) => i % FOOD_TYPES.length);
+}
+
+function spawnFood() {
+  food.active = false;
+  food.missing = false;
+  food.missSpin = 0;
+  food.missFeedbackShown = false;
+  food.x = FOOD_START_X; food.y = FOOD_START_Y;
+  isThrowing = false;
+  // Reset shadow: snap posisi X langsung, scale pop dari bawah
+  foodShadowEl.style.transition = 'none';
+  foodShadowEl.style.left = (FOOD_START_X - 132) + 'px';
+  foodShadowEl.style.transform = 'scale(0.05)';
+  foodShadowEl.style.opacity = '0';
+  requestAnimationFrame(() => {
+    foodShadowEl.style.transition = 'transform 0.28s cubic-bezier(.18,.86,.32,1.2), opacity 0.2s ease-out';
+    foodShadowEl.style.transform = 'scale(1)';
+    foodShadowEl.style.opacity = '1';
+    setTimeout(() => { foodShadowEl.style.transition = 'none'; }, 300);
+  });
+  updateFoodUI();
+  updateQueueUI();
+  updateTrajectory();
+}
+
+function updateFoodUI() {
+  foodImgEl.src = FOOD_TYPES[currentFood];
+  foodConEl.style.display = 'block';
+}
+
+function updateQueueUI() {
+  // No next-food preview; wadah starts empty and only fills after hits.
+}
+
+// =====================================================
+//  TRAJECTORY + AIM
+// =====================================================
+const FOOD_START_X = 540;
+const FOOD_START_Y = 1660;
+const WADAH_Y      = 542;
+
+function updateTrajectory() {
+  const startX = FOOD_START_X, startY = FOOD_START_Y;
+  const targetX = containerX + CONTAINER_W / 2;
+  const targetY = WADAH_Y + 60; // tengah wadah
+  // Arc: controlpoint di antara start dan target, sedikit ke kiri/kanan
+  const cx = startX + (targetX - startX) * 0.5;
+  const cy = Math.min(startY, targetY) - 200;  // lekukan ke atas
+  trajPath.setAttribute('d', `M${startX},${startY} Q${cx},${cy} ${targetX},${targetY}`);
+
+  // Update aim dot ke posisi food
+  aimDotEl.style.left = startX + 'px';
+  aimDotEl.style.top  = startY + 'px';
+}
+
+function showAimGuide() {
+  document.getElementById('trajectory-svg').classList.add('show');
+  document.getElementById('aim-line').classList.add('show');
+  aimDotEl.classList.add('show');
+}
+
+function hideAimGuide() {
+  document.getElementById('trajectory-svg').classList.remove('show');
+  document.getElementById('aim-line').classList.remove('show');
+  aimDotEl.classList.remove('show');
+  aimLineEl.setAttribute('x1', FOOD_START_X);
+  aimLineEl.setAttribute('y1', FOOD_START_Y);
+  aimLineEl.setAttribute('x2', FOOD_START_X);
+  aimLineEl.setAttribute('y2', FOOD_START_Y);
+}
+
+function updateAimFromPointer() {
+  const velocity = getAssistedThrowVelocity(aimPower);
+  const startX = FOOD_START_X, startY = FOOD_START_Y;
+  const preview = [];
+
+  for (let i = 0; i <= velocity.frames; i += 3) {
+    const t = i;
+    preview.push({
+      x: startX + velocity.vx * t,
+      y: startY + velocity.vy * t + 0.5 * GRAVITY * t * t
+    });
+  }
+
+  trajPath.setAttribute('d', preview.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' '));
+
+  aimLineEl.setAttribute('x1', startX);
+  aimLineEl.setAttribute('y1', startY);
+  aimLineEl.setAttribute('x2', velocity.targetX);
+  aimLineEl.setAttribute('y2', velocity.targetY);
+}
+
+function getAssistedThrowVelocity(power = aimPower) {
+  const targetX = Math.max(containerX + 16, Math.min(containerX + CONTAINER_W - 16, aimTarget.x));
+  const targetY = Math.max(WADAH_Y + 28, Math.min(WADAH_Y + 92, aimTarget.y));
+  const frames = 72 - Math.max(power, AIM_MIN_POWER) * 12;
+  const vx = (targetX - FOOD_START_X) / frames;
+  const vy = (targetY - FOOD_START_Y - 0.5 * GRAVITY * frames * frames) / frames;
+  return { vx, vy, targetX, targetY, frames };
+}
+
+// =====================================================
+//  JOYSTICK INPUT
+// =====================================================
+function getScenePos(clientX, clientY) {
+  const wrapper = document.getElementById('game-wrapper');
+  const scene   = document.getElementById('game-scene');
+  const rect    = wrapper.getBoundingClientRect();
+  const scale   = scene.getBoundingClientRect().width / 1080;
+  return {
+    x: (clientX - rect.left) / scale,
+    y: (clientY - rect.top)  / scale
+  };
+}
+
+function onPointerDown(e) {
+  if (!gameActive || introActive || isThrowing) return;
+  startBacksound();
+  const pos = getScenePos(e.clientX, e.clientY);
+  if (pos.y < 520) return;
+  isAiming = true;
+  containerMoving = true;
+  aimDragStart = pos;
+  showAimGuide();
+  updateAimTarget(pos);
+}
+
+function onPointerMove(e) {
+  if (!isAiming || isThrowing) return;
+  const pos = getScenePos(e.clientX, e.clientY);
+  updateAimTarget(pos);
+}
+
+function onPointerUp(e) {
+  if (!isAiming) return;
+  isAiming = false;
+  const shouldLaunch = aimPower > AIM_MIN_POWER;
+  const releasePower = aimPower;
+  hideAimGuide();
+  foodConEl.style.transform = 'scale(1)';
+  if (shouldLaunch) launchFood(releasePower);
+  aimPower = 0;
+}
+
+function onPointerCancel() {
+  if (!isAiming) return;
+  isAiming = false;
+  aimPower = 0;
+  foodConEl.style.transform = 'scale(1)';
+  hideAimGuide();
+}
+
+function updateAimTarget(pos) {
+  const dragX = pos.x - aimDragStart.x;
+  const pullUp = Math.max(0, aimDragStart.y - pos.y);
+  const lead = containerMoving ? containerDir * containerSpeed * 16 : 0;
+  const basketCenter = containerX + CONTAINER_W / 2;
+  aimPower = Math.max(0.58, Math.min(1, 0.62 + pullUp / 520));
+  const rawX = basketCenter + lead + dragX * 0.16;
+  const targetX = Math.max(containerX + 16, Math.min(containerX + CONTAINER_W - 16, rawX));
+  const targetY = WADAH_Y + 48;
+  aimTarget = { x: targetX, y: targetY };
+  aimDotEl.style.left = targetX + 'px';
+  aimDotEl.style.top = targetY + 'px';
+  foodConEl.style.transform = `scale(${1 - aimPower * 0.04}) translateY(${aimPower * 6}px)`;
+  updateAimFromPointer();
+}
+
+// Touch events
+document.addEventListener('pointerdown', onPointerDown);
+document.addEventListener('pointermove', onPointerMove);
+document.addEventListener('pointerup',   onPointerUp);
+document.addEventListener('pointercancel', onPointerCancel);
+
+// Launch button
+document.getElementById('launch-btn').addEventListener('click', () => {
+  if (!gameActive || isThrowing) return;
+  aimTarget = { x: containerX + CONTAINER_W / 2, y: THROW_TARGET_Y };
+  launchFood(0.75);
+});
+
+// =====================================================
+//  LAUNCH FOOD
+// =====================================================
+function launchFood(power = aimPower) {
+  if (isThrowing || !gameActive) return;
+  isThrowing = true;
+  hideAimGuide();
+  foodConEl.style.display = 'none';
+  startBacksound();
+  playThrowSound(power);
+
+  // Shadow fade out pas food dilempar — tidak muncul lagi sampai respawn
+  foodShadowEl.style.transition = 'transform 0.35s ease-in, opacity 0.3s ease-in';
+  foodShadowEl.style.transform = 'scale(0.05)';
+  foodShadowEl.style.opacity = '0';
+  setTimeout(() => { foodShadowEl.style.transition = 'none'; }, 380);
+
+  const velocity = getAssistedThrowVelocity(Math.max(power, AIM_MIN_POWER));
+
+  food.x  = FOOD_START_X;
+  food.y  = FOOD_START_Y;
+  food.vx = velocity.vx;
+  food.vy = velocity.vy;
+  food.active = true;
+  food.el = createFoodProjectile();
+}
+
+function createFoodProjectile() {
+  const el = document.createElement('img');
+  el.src = FOOD_TYPES[currentFood];
+  el.style.cssText = `
+    position: absolute;
+    width: 215px; height: 215px;
+    object-fit: contain;
+    z-index: 40;
+    left: ${food.x - 107.5}px;
+    top:  ${food.y - 107.5}px;
+    filter: none;
+    transition: none;
+    pointer-events: none;
+  `;
+  document.getElementById('game-scene').appendChild(el);
+  return el;
+}
+
+// =====================================================
+//  MAIN GAME LOOP
+// =====================================================
+let lastTime = 0;
+function gameLoop(ts = 0) {
+  if (!gameActive) return;
+  requestAnimationFrame(gameLoop);
+
+  const dt = Math.min(ts - lastTime, 50);
+  lastTime = ts;
+  if (runStartTime) {
+    elapsedMs = performance.now() - runStartTime;
+    updateTimer();
+  }
+
+  // Move container
+  if (containerMoving) moveContainer();
+
+  // Update food projectile
+  if (food.active) {
+    updateFoodProjectile();
+  }
+}
+
+// =====================================================
+//  CONTAINER MOVEMENT
+// =====================================================
+function moveContainer() {
+  containerX += containerDir * containerSpeed;
+
+  // Bounce with slight randomness
+  if (containerX >= CONTAINER_MAX) {
+    containerX = CONTAINER_MAX;
+    containerDir = -1;
+    containerSpeed = 3.5 + Math.random() * 2;
+  } else if (containerX <= CONTAINER_MIN) {
+    containerX = CONTAINER_MIN;
+    containerDir = 1;
+    containerSpeed = 3.5 + Math.random() * 2;
+  }
+
+  contArea.style.left = containerX + 'px';
+  const shadow = document.getElementById('container-shadow');
+  shadow.style.left = (containerX - 18) + 'px';
+  if (isAiming) updateTrajectory();
+}
+
+// =====================================================
+//  FOOD PROJECTILE UPDATE
+// =====================================================
+const GRAVITY = 0.55;
+
+function updateFoodProjectile() {
+  food.vy += GRAVITY;
+  if (food.missing) {
+    food.vx *= 0.94;
+    food.missSpin += food.vx * 0.08 + 1.6;
+  }
+  food.x  += food.vx;
+  food.y  += food.vy;
+
+  if (food.el) {
+    food.el.style.left = (food.x - 107.5) + 'px';
+    food.el.style.top  = (food.y - 107.5) + 'px';
+    const heightProgress = Math.max(0, Math.min(1, (FOOD_START_Y - food.y) / (FOOD_START_Y - WADAH_Y)));
+    const scale = 1 - heightProgress * 0.70;
+    food.el.style.transform = `scale(${scale})`;
+
+    // Shadow tetap hidden selama food aktif terbang (naik maupun turun)
+    // Shadow hanya muncul kembali saat food respawn di lantai
+  }
+
+  if (food.missing) {
+    if (!food.missFeedbackShown && food.y > 1304) {
+      food.missFeedbackShown = true;
+      updateHearts();
+      showMissFeedback();
+      shakeScene();
+      playMissSound();
+    }
+    if (food.y > GAME_H + 220) finishMissFall();
+    return;
+  }
+
+  // Check container hit — wadah ada di atas meja
+  const cLeft  = containerX - 110;
+  const cRight = containerX + CONTAINER_W + 110;
+  const cTop   = WADAH_Y - 160;
+  const cBot   = WADAH_Y + 65;
+
+  if (food.vy > 0 && food.y > WADAH_Y - 240 && food.y < WADAH_Y + 90) {
+    const basketCenter = containerX + CONTAINER_W / 2;
+    food.x += (basketCenter - food.x) * 0.22;
+  }
+
+  if (food.vy > 0 && food.x > cLeft && food.x < cRight && food.y > cTop && food.y < cBot) {
+    // HIT!
+    onDimsumScored();
+    return;
+  }
+
+  // Missed — begitu turun lewat wadah, makanan jatuh di belakang kabinet.
+  if (food.vy > 0 && food.y > WADAH_Y + 228) {
+    onMiss();
+    return;
+  }
+}
+
+// =====================================================
+//  EVENTS: SCORED & MISS
+// =====================================================
+function onDimsumScored() {
+  food.active = false;
+  isThrowing = true;
+  playHitSound();
+  animateFoodIntoContainer(() => {
+    removeFoodProjectile();
+    inWadah++;
+    combo++;
+    showHitFeedback(inWadah);
+    showHitParticles(containerX + CONTAINER_W / 2, WADAH_Y + 70);
+    if (combo >= 2) showComboFeedback(combo);
+    updateSlots();
+    updateDots();
+
+    if (inWadah >= 3) {
+      score += 100;
+      totalMade++;
+      // updateScore & bumpScore dipanggil dari dalam showCoinPopup saat koin pertama tiba
+      showCoinPopup();
+      playCoinSound();
+      containerSpeed += 0.5; // gets slightly faster each wadah
+      setTimeout(() => {
+        if (!gameActive) return;
+        inWadah = 0;
+        currentFood = (currentFood + 1) % FOOD_TYPES.length;
+        updateSlots();
+        updateDots();
+        spawnFood();
+      }, 1200);
+      return;
+    }
+
+    setTimeout(() => { if (gameActive) spawnFood(); }, 300);
+  });
+}
+
+function onMiss() {
+  if (food.missing) return;
+  food.missing = true;
+  if (food.el) {
+    food.el.style.zIndex = '34';
+    food.el.style.opacity = '1';
+  }
+  food.vx *= 0.72;
+  food.vy = Math.max(4.2, Math.min(food.vy, 6.2));
+  lives--;
+  combo = 0;
+}
+
+function finishMissFall() {
+  if (!food.missing) return;
+  const gameOver = lives <= 0;
+  removeFoodProjectile();
+  food.missing = false;
+  if (gameOver) {
+    endGame();
+    return;
+  }
+  setTimeout(() => { if (gameActive) spawnFood(); }, 180);
+}
+
+function animateFoodIntoContainer(done) {
+  if (!food.el) { done(); return; }
+
+  const targetX = containerX + CONTAINER_W / 2;
+  const targetY = WADAH_Y + 44;
+  const currentScale = 1 - Math.max(0, Math.min(1, (FOOD_START_Y - food.y) / (FOOD_START_Y - WADAH_Y))) * 0.70;
+
+  // Snap food ke posisi sekarang (tanpa transition)
+  food.el.style.transition = 'none';
+  food.el.style.zIndex = '48';
+  food.el.style.left = (food.x - 107.5) + 'px';
+  food.el.style.top  = (food.y - 107.5) + 'px';
+  food.el.style.transform = `scale(${currentScale})`;
+  food.el.style.opacity = '1';
+
+  // Phase 1: slide ke tengah wadah + sedikit squish (scale naik)
+  requestAnimationFrame(() => {
+    food.el.style.transition = 'left 0.14s ease-out, top 0.14s cubic-bezier(.3,.9,.2,1), transform 0.14s ease-out';
+    food.el.style.left = (targetX - 107.5) + 'px';
+    food.el.style.top  = (targetY - 107.5) + 'px';
+    food.el.style.transform = `scale(${currentScale * 1.18})`; // squish naik
+
+    // Phase 2: shrink masuk ke dalam wadah + fade
+    setTimeout(() => {
+      if (!food.el) return;
+      food.el.style.transition = 'transform 0.22s cubic-bezier(.55,0,.45,1), opacity 0.18s ease-in';
+      food.el.style.transform = 'scale(0.18)';
+      food.el.style.opacity = '0';
+    }, 140);
+  });
+
+  // Basket bounce
+  contArea.classList.remove('hit-pulse');
+  void contArea.offsetWidth;
+  contArea.classList.add('hit-pulse');
+
+  setTimeout(done, 320);
+}
+
+function showHitFeedback(count) {
+  const el = document.createElement('div');
+  el.className = 'hit-label';
+  el.textContent = count + 'x';
+  el.style.left = (containerX + CONTAINER_W / 2) + 'px';
+  el.style.top = (WADAH_Y + 8) + 'px';
+  document.getElementById('game-scene').appendChild(el);
+  setTimeout(() => el.remove(), 720);
+}
+
+function showComboFeedback(count) {
+  const el = document.createElement('div');
+  el.className = 'combo-label';
+  el.textContent = 'COMBO x' + count;
+  el.style.left = (containerX + CONTAINER_W / 2) + 'px';
+  el.style.top = (WADAH_Y - 38) + 'px';
+  document.getElementById('game-scene').appendChild(el);
+  setTimeout(() => el.remove(), 880);
+}
+
+function showHitParticles(x, y) {
+  const scene = document.getElementById('game-scene');
+  const colors = ['#fff176', '#ffb74d', '#ffffff', '#ffd54f', '#ffe082', '#ff8a65'];
+
+  // Ring expand
+  const ring = document.createElement('div');
+  ring.className = 'hit-ring';
+  ring.style.left = x + 'px';
+  ring.style.top  = y + 'px';
+  scene.appendChild(ring);
+  setTimeout(() => ring.remove(), 500);
+
+  // Flash glow
+  const flash = document.createElement('div');
+  flash.className = 'hit-flash';
+  flash.style.left = x + 'px';
+  flash.style.top  = y + 'px';
+  scene.appendChild(flash);
+  setTimeout(() => flash.remove(), 350);
+
+  // Particles — 18 total, bias ke atas
+  for (let i = 0; i < 18; i++) {
+    const p = document.createElement('div');
+    const isStar = i % 5 === 0;
+    p.className = isStar ? 'hit-particle star' : 'hit-particle';
+
+    // Bias sudut ke atas (lebih banyak partikel arah atas)
+    const angle = (Math.PI * 2 * i) / 18 - Math.PI / 2;
+    const upBias = Math.max(0, -Math.sin(angle)) * 30;
+    const dist = 50 + Math.random() * 70 + upBias;
+
+    p.style.left = x + 'px';
+    p.style.top  = y + 'px';
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+    scene.appendChild(p);
+    setTimeout(() => p.remove(), 700);
+  }
+}
+
+function showMissFeedback() {
+  const el = document.createElement('div');
+  el.className = 'miss-label';
+  el.textContent = 'GAGAL';
+  el.style.left = FOOD_START_X + 'px';
+  el.style.top = (FOOD_START_Y - 140) + 'px';
+  document.getElementById('game-scene').appendChild(el);
+  setTimeout(() => el.remove(), 720);
+}
+
+function shakeScene() {
+  const wrapper = document.getElementById('game-wrapper');
+  wrapper.classList.remove('shake');
+  void wrapper.offsetWidth;
+  wrapper.classList.add('shake');
+  setTimeout(() => wrapper.classList.remove('shake'), 340);
+}
+
+function bumpScore() {
+  scoreEl.classList.remove('bump');
+  void scoreEl.offsetWidth;
+  scoreEl.classList.add('bump');
+  setTimeout(() => scoreEl.classList.remove('bump'), 320);
+}
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    audioCtx = new AudioContextClass();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq, duration, type = 'sine', gain = 0.05, startOffset = 0) {
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const osc = ctx.createOscillator();
+  const volume = ctx.createGain();
+  const start = ctx.currentTime + startOffset;
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, start);
+  volume.gain.setValueAtTime(0.0001, start);
+  volume.gain.exponentialRampToValueAtTime(gain, start + 0.015);
+  volume.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(volume).connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.02);
+}
+
+function playThrowSound(power) {
+  playTone(220 + power * 90, 0.12, 'triangle', 0.035);
+}
+
+function playHitSound() {
+  playTone(520, 0.08, 'sine', 0.045);
+  playTone(760, 0.1, 'sine', 0.035, 0.055);
+}
+
+function playCoinSound() {
+  playTone(880, 0.08, 'square', 0.035);
+  playTone(1180, 0.11, 'square', 0.03, 0.075);
+}
+
+function playMissSound() {
+  playTone(150, 0.16, 'sawtooth', 0.035);
+}
+
+function startBacksound() {
+  if (musicTimer) return;
+  const ctx = getAudioCtx();
+  if (!ctx) return;
+  const melody = [392, 494, 587, 494, 440, 523, 659, 523];
+  const bass = [196, 196, 220, 220, 174, 174, 196, 247];
+
+  musicTimer = setInterval(() => {
+    const i = musicStep % melody.length;
+    playTone(melody[i], 0.11, 'triangle', 0.018);
+    if (i % 2 === 0) playTone(bass[i], 0.18, 'sine', 0.014);
+    musicStep++;
+  }, 260);
+}
+
+function removeFoodProjectile() {
+  if (food.el) {
+    food.el.remove();
+    food.el = null;
+  }
+  food.active = false;
+  isThrowing = false;
+}
+
+// =====================================================
+//  COIN POPUP
+// =====================================================
+function showCoinPopup() {
+  const scene    = document.getElementById('game-scene');
+  const popupWrap = document.getElementById('coin-popup-wrap');
+
+  // Burst & fly origin = center of popup (horizontal center, y ~894)
+  const BURST_X  = 540;
+  const BURST_Y  = 894;   // center koin besar di popup
+
+  // Target = coin icon di #hud-score
+  // right:50px, top:118px, w:191px → left=839, center x≈900, center y=150
+  const TARGET_X = 900;
+  const TARGET_Y = 150;
+
+  const COIN_COUNT = 10;
+  const SIZE_SMALL = 90;
+
+  // ── Phase 1: Popup besar muncul centered ───────────────────────
+  popupWrap.classList.remove('hide');
+  requestAnimationFrame(() => {
+    popupWrap.classList.add('show');
+  });
+
+  // ── Phase 2: 320ms → hide popup + burst koin kecil (overlap) ──
+  setTimeout(() => {
+    popupWrap.classList.remove('show');
+    popupWrap.classList.add('hide');
+
+    const coins = [];
+    for (let i = 0; i < COIN_COUNT; i++) {
+      const coin = document.createElement('img');
+      coin.src = 'assets/coin_score.svg';
+      coin.className = 'flying-coin';
+
+      const angle  = (Math.PI * 2 * i / COIN_COUNT) - Math.PI / 2;
+      const radius = 100 + Math.random() * 90;
+      const bx     = BURST_X + Math.cos(angle) * radius;
+      const by     = BURST_Y + Math.sin(angle) * radius * 0.5;
+
+      coin.style.cssText = `
+        width:${SIZE_SMALL}px; height:${SIZE_SMALL}px;
+        left:${bx - SIZE_SMALL/2}px; top:${by - SIZE_SMALL/2}px;
+        transform:scale(0); opacity:0;
+      `;
+      scene.appendChild(coin);
+      coins.push({ el: coin, bx, by });
+
+      // Pop burst stagger
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          coin.style.transition = 'transform 0.2s cubic-bezier(.18,.86,.32,1.4), opacity 0.15s ease-out';
+          coin.style.transform  = 'scale(1)';
+          coin.style.opacity    = '1';
+        });
+      }, i * 20);
+    }
+
+    // ── Phase 3: 420ms → semua koin terbang ke HUD ─────────────
+    setTimeout(() => {
+      let scoreUpdated = false;
+
+      coins.forEach(({ el, bx, by }, idx) => {
+        const flyDelay = idx * 55;
+        const flyDur   = 530 + idx * 12;
+        const dx = TARGET_X - bx;
+        const dy = TARGET_Y - by;
+
+        setTimeout(() => {
+          el.style.transition = 'none';
+          requestAnimationFrame(() => {
+            el.style.transition = `transform ${flyDur}ms cubic-bezier(.4,0,.15,1), opacity 0.2s ease-in ${flyDur - 140}ms`;
+            el.style.transform  = `translate(${dx}px, ${dy}px) scale(0.3)`;
+
+            setTimeout(() => {
+              el.remove();
+              if (!scoreUpdated) {
+                scoreUpdated = true;
+                updateScore();
+                bumpScore();
+              }
+            }, flyDur + 60);
+          });
+        }, flyDelay);
+      });
+
+      // Reset popup class setelah semua selesai
+      const totalDur = COIN_COUNT * 55 + 530 + COIN_COUNT * 12 + 200;
+      setTimeout(() => {
+        popupWrap.classList.remove('hide');
+      }, totalDur);
+
+    }, 420);
+  }, 320);
+}
+
+// =====================================================
+//  UI UPDATES
+// =====================================================
+function updateScore() {
+  scoreEl.textContent = String(score).padStart(3, '0');
+}
+
+function formatTime(ms) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+}
+
+function updateTimer() {
+  timerEl.textContent = formatTime(elapsedMs);
+}
+
+function updateBestDisplay() {
+  bestEl.textContent = String(bestCoins).padStart(3, '0');
+}
+
+function updateBestRun() {
+  const isBetterCoin = score > bestCoins;
+  const isSameCoinFaster = score === bestCoins && score > 0 && (!bestRunTime || elapsedMs < bestRunTime);
+  if (!isBetterCoin && !isSameCoinFaster) return;
+  bestCoins = score;
+  bestRunTime = elapsedMs;
+  saveNumber('dimsumGacoanBestCoins', bestCoins);
+  saveNumber('dimsumGacoanBestTime', Math.round(bestRunTime));
+  updateBestDisplay();
+}
+
+function updateHearts() {
+  hearts.forEach((h, i) => {
+    if (i < lives) h.classList.remove('lost');
+    else           h.classList.add('lost');
+  });
+}
+
+function updateSlots() {
+  if (inWadah <= 0) {
+    containerImgEl.src = WADAH_EMPTY;
+  } else {
+    containerImgEl.src = WADAH_FILLED[currentFood][Math.min(inWadah, 3) - 1];
+  }
+}
+
+function updateDots() {
+  dots.forEach((d, i) => {
+    d.className = 'counter-dot' + (i < inWadah ? ' filled' : '');
+  });
+}
+
+// =====================================================
+//  GAME OVER
+// =====================================================
+function endGame() {
+  if (runStartTime) {
+    elapsedMs = performance.now() - runStartTime;
+    runStartTime = 0;
+  }
+  gameActive = false;
+  removeFoodProjectile();
+  updateTimer();
+  updateBestRun();
+  overlayTitle.textContent = score > 0 ? '🥟 SELESAI!' : 'GAME OVER';
+  finalScore.textContent = score;
+  finalTime.textContent = formatTime(elapsedMs);
+  overlay.classList.add('show');
+}
+
+document.getElementById('btn-restart').addEventListener('click', () => {
+  stopBGM();
+  initGame();
+  startBGM();
+});
+
+// =====================================================
+//  BACKGROUND MUSIC
+// =====================================================
+let bgmTimer = null;
+let bgmRunning = false;
+
+const BGM_MELODY = [
+  784,0,659,523,0,659,784,880,
+  784,659,0,523,587,659,0,523,
+  659,0,784,880,784,0,659,523,
+  440,523,587,659,0,784,659,0
+];
+const BGM_NOTE_DUR = 145; // ms per step
+
+function startBGM() {
+  if (bgmRunning) return;
+  bgmRunning = true;
+  let idx = 0;
+
+  function tick() {
+    if (!bgmRunning) return;
+    const freq = BGM_MELODY[idx % BGM_MELODY.length];
+    if (freq > 0) {
+      playTone(freq,       0.11, 'triangle', 0.032);
+      playTone(freq * 2,   0.06, 'sine',     0.010);
+    }
+    idx++;
+    bgmTimer = setTimeout(tick, BGM_NOTE_DUR);
+  }
+  tick();
+}
+
+function stopBGM() {
+  bgmRunning = false;
+  if (bgmTimer) { clearTimeout(bgmTimer); bgmTimer = null; }
+}
+
+// =====================================================
+//  COVER SCREEN
+// =====================================================
+window.addEventListener('load', () => {
+  const cover   = document.getElementById('cover-screen');
+  const btnWrap = document.getElementById('cover-btn-wrap');
+  const btnPlay = document.getElementById('btn-play');
+
+  // Button muncul setelah 0.8s
+  setTimeout(() => btnWrap.classList.add('show'), 200);
+
+  btnPlay.addEventListener('click', () => {
+    // Feedback tap
+    btnPlay.style.animation = 'none';
+    btnPlay.style.transform = 'scale(0.9)';
+    setTimeout(() => {
+      // Fade out cover
+      cover.classList.add('fade-out');
+      // Start game + BGM setelah cover fade
+      setTimeout(() => {
+        cover.style.display = 'none';
+        initGame();
+        startBGM();
+      }, 480);
+    }, 100);
+  });
+});
+</script>
+</body>
+</html>

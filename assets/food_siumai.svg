@@ -1,0 +1,69 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="fillingGrad" cx="45%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#F5D080"/>
+      <stop offset="60%" stop-color="#D4A030"/>
+      <stop offset="100%" stop-color="#A87020"/>
+    </radialGradient>
+    <radialGradient id="wrapperGrad" cx="40%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#FFF0A0"/>
+      <stop offset="50%" stop-color="#F0C840"/>
+      <stop offset="100%" stop-color="#C8960A"/>
+    </radialGradient>
+    <radialGradient id="toppingGrad" cx="40%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#FF9060"/>
+      <stop offset="60%" stop-color="#E84020"/>
+      <stop offset="100%" stop-color="#B02010"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Shadow -->
+  <ellipse cx="100" cy="178" rx="58" ry="12" fill="rgba(0,0,0,0.18)"/>
+
+  <!-- Siu mai body - cup wrapper wrinkles -->
+  <!-- Base ellipse -->
+  <ellipse cx="100" cy="148" rx="60" ry="22" fill="#C89010"/>
+
+  <!-- Wrapper pleats (the folded dough sides) -->
+  <!-- Left pleats -->
+  <path d="M40,118 C38,108 42,98 48,92 C50,105 48,115 40,118 Z" fill="#E8C030"/>
+  <path d="M48,92 C50,80 58,70 66,65 C64,80 58,88 48,92 Z" fill="#F0D040"/>
+  <path d="M66,65 C70,55 78,48 88,45 C82,58 74,64 66,65 Z" fill="#F8DC50"/>
+  <!-- Right pleats -->
+  <path d="M160,118 C162,108 158,98 152,92 C150,105 152,115 160,118 Z" fill="#E8C030"/>
+  <path d="M152,92 C150,80 142,70 134,65 C136,80 142,88 152,92 Z" fill="#F0D040"/>
+  <path d="M134,65 C130,55 122,48 112,45 C118,58 126,64 134,65 Z" fill="#F8DC50"/>
+  <!-- Front pleats -->
+  <path d="M40,118 C44,125 52,132 62,136 C56,128 48,122 40,118 Z" fill="#D4A020"/>
+  <path d="M160,118 C156,125 148,132 138,136 C144,128 152,122 160,118 Z" fill="#D4A020"/>
+
+  <!-- Wrapper body smooth part -->
+  <ellipse cx="100" cy="108" rx="58" ry="48" fill="url(#wrapperGrad)"/>
+  <!-- Wrapper texture/sheen -->
+  <ellipse cx="84" cy="84" rx="22" ry="14" fill="rgba(255,255,200,0.4)" transform="rotate(-20,84,84)"/>
+
+  <!-- Filling dome (the meat/filling sticking out the top) -->
+  <ellipse cx="100" cy="90" rx="48" ry="38" fill="url(#fillingGrad)"/>
+  <!-- Filling texture dots -->
+  <circle cx="90" cy="80" r="4" fill="#B88020" opacity="0.4"/>
+  <circle cx="108" cy="82" r="3.5" fill="#B88020" opacity="0.35"/>
+  <circle cx="100" cy="95" r="4" fill="#B88020" opacity="0.35"/>
+  <circle cx="82" cy="94" r="3" fill="#B88020" opacity="0.3"/>
+  <circle cx="116" cy="96" r="3.5" fill="#B88020" opacity="0.35"/>
+  <!-- Filling highlight -->
+  <ellipse cx="92" cy="76" rx="16" ry="10" fill="rgba(255,240,160,0.4)" transform="rotate(-10,92,76)"/>
+
+  <!-- Orange roe topping (ikura/tobiko) on top -->
+  <ellipse cx="100" cy="72" rx="24" ry="16" fill="url(#toppingGrad)"/>
+  <!-- Individual roe dots -->
+  <circle cx="94" cy="68" r="5" fill="#FF6830" opacity="0.8"/>
+  <circle cx="104" cy="65" r="5.5" fill="#F04020" opacity="0.85"/>
+  <circle cx="113" cy="70" r="4.5" fill="#FF6030" opacity="0.8"/>
+  <circle cx="88" cy="75" r="5" fill="#E83818" opacity="0.8"/>
+  <circle cx="100" cy="78" r="5.5" fill="#FF5020" opacity="0.85"/>
+  <circle cx="110" cy="76" r="4.5" fill="#F04828" opacity="0.8"/>
+  <!-- Roe highlights -->
+  <circle cx="93" cy="66" r="2" fill="rgba(255,200,160,0.6)"/>
+  <circle cx="104" cy="63" r="2.2" fill="rgba(255,200,160,0.6)"/>
+  <circle cx="112" cy="68" r="1.8" fill="rgba(255,200,160,0.55)"/>
+</svg>
