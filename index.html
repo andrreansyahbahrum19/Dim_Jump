@@ -737,20 +737,6 @@
       100% { opacity: 0; -webkit-transform: translate(-50%, -70%) scale(0.9); }
     }
 
-    @keyframes sceneShake {
-      0%   { transform: translate(0, 0); }
-      15%  { transform: translate(-18px, 8px); }
-      30%  { transform: translate(14px, -10px); }
-      45%  { transform: translate(-10px, 6px); }
-      60%  { transform: translate(8px, -4px); }
-      75%  { transform: translate(-4px, 2px); }
-      100% { transform: translate(0, 0); }
-    }
-    #game-scene.level-shake {
-      animation: sceneShake 0.45s ease-out forwards;
-      -webkit-animation: sceneShake 0.45s ease-out forwards;
-    }
-
     @keyframes scoreBump {
       0% { transform: translateY(-50%) scale(1); }
       45% { transform: translateY(-50%) scale(1.18); }
@@ -1816,21 +1802,15 @@ function showHitFeedback(count) {
 }
 
 function showLevelUpFeedback(level) {
-  // Screen shake
-  const scene = document.getElementById('game-scene');
-  scene.classList.remove('level-shake');
-  void scene.offsetWidth; // force reflow untuk restart animation
-  scene.classList.add('level-shake');
-  setTimeout(() => scene.classList.remove('level-shake'), 500);
-
-  // Golden flash overlay
+  // Golden flash — double rAF (no forced reflow, no lag)
   const flash = document.getElementById('level-up-flash');
   flash.classList.remove('show');
-  void flash.offsetWidth;
-  flash.classList.add('show');
-  setTimeout(() => flash.classList.remove('show'), 750);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    flash.classList.add('show');
+    setTimeout(() => flash.classList.remove('show'), 750);
+  }));
 
-  // Popup teks — pakai CSS class bukan inline animation (reliable di Android)
+  // Popup teks — CSS class (reliable di Android)
   const el = document.createElement('div');
   el.className = 'level-up-popup';
   el.innerHTML = '⚡ LEVEL ' + level + '!<span class="level-up-sub">SPEED UP!</span>';
@@ -2196,6 +2176,28 @@ function stopBGM() {
   bgmRunning = false;
   if (bgmTimer) { clearTimeout(bgmTimer); bgmTimer = null; }
 }
+
+// =====================================================
+//  AUDIO — RESUME SAAT LAYAR NYALA LAGI
+// =====================================================
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    // Layar mati / app background — pause BGM biar timer gak numpuk
+    if (bgmRunning) {
+      bgmRunning = false;
+      if (bgmTimer) { clearTimeout(bgmTimer); bgmTimer = null; }
+    }
+  } else {
+    // Layar nyala lagi — resume AudioContext dulu
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    // Restart BGM kalau game masih jalan
+    if (gameActive) {
+      startBGM();
+    }
+  }
+});
 
 // =====================================================
 //  COVER SCREEN
