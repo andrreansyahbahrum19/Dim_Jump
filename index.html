@@ -1420,31 +1420,36 @@ function createFoodProjectile() {
 //  MAIN GAME LOOP
 // =====================================================
 let lastTime = 0;
+const TARGET_MS = 1000 / 60; // baseline 60fps = 16.67ms per frame
+
 function gameLoop(ts = 0) {
   if (!gameActive) return;
   requestAnimationFrame(gameLoop);
 
   const dt = Math.min(ts - lastTime, 50);
   lastTime = ts;
+  // Normalisasi ke 60fps — di 120fps tiap frame ~0.5, di 60fps ~1.0
+  const scale = dt / TARGET_MS;
+
   if (runStartTime) {
     elapsedMs = performance.now() - runStartTime;
     updateTimer();
   }
 
   // Container selalu gerak saat game aktif
-  moveContainer();
+  moveContainer(scale);
 
   // Update food projectile
   if (food.active) {
-    updateFoodProjectile();
+    updateFoodProjectile(scale);
   }
 }
 
 // =====================================================
 //  CONTAINER MOVEMENT
 // =====================================================
-function moveContainer() {
-  containerX += containerDir * containerSpeed;
+function moveContainer(scale = 1) {
+  containerX += containerDir * containerSpeed * scale;
 
   // Bounce — speed konsisten, tidak random
   if (containerX >= CONTAINER_MAX) {
@@ -1465,21 +1470,21 @@ function moveContainer() {
 // =====================================================
 const GRAVITY = 0.55;
 
-function updateFoodProjectile() {
-  food.vy += GRAVITY;
+function updateFoodProjectile(scale = 1) {
+  food.vy += GRAVITY * scale;
   if (food.missing) {
-    food.vx *= 0.94;
-    food.missSpin += food.vx * 0.08 + 1.6;
+    food.vx *= Math.pow(0.94, scale);
+    food.missSpin += (food.vx * 0.08 + 1.6) * scale;
   }
-  food.x  += food.vx;
-  food.y  += food.vy;
+  food.x  += food.vx * scale;
+  food.y  += food.vy * scale;
 
   if (food.el) {
     food.el.style.left = (food.x - 107.5) + 'px';
     food.el.style.top  = (food.y - 107.5) + 'px';
     const heightProgress = Math.max(0, Math.min(1, (FOOD_START_Y - food.y) / (FOOD_START_Y - WADAH_Y)));
-    const scale = 1 - heightProgress * 0.70;
-    food.el.style.transform = `scale(${scale})`;
+    const sz = 1 - heightProgress * 0.70;
+    food.el.style.transform = `scale(${sz})`;
 
     // Shadow tetap hidden selama food aktif terbang (naik maupun turun)
     // Shadow hanya muncul kembali saat food respawn di lantai
