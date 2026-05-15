@@ -117,8 +117,9 @@
     }
 
     .heart-icon.lost {
-      filter: grayscale(1) opacity(0.25) !important;
-      transform: scale(0.85);
+      filter: grayscale(1) opacity(0.2);
+      transform: scale(0.75);
+      transition: filter 0.2s, transform 0.2s;
     }
 
     #hud-score {
@@ -639,6 +640,32 @@
       80% { transform: translate(4px, -2px); }
     }
 
+    /* ===== MISS FEEDBACK ===== */
+    #miss-flash {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 30, 30, 0.35);
+      pointer-events: none;
+      z-index: 500;
+      opacity: 0;
+    }
+    #miss-flash.show {
+      animation: missFlash 0.45s ease-out forwards;
+    }
+    @keyframes missFlash {
+      0%   { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @keyframes heartLost {
+      0%   { transform: scale(1.4); filter: brightness(2) sepia(1) saturate(5) hue-rotate(-20deg); }
+      40%  { transform: scale(0.7); }
+      70%  { transform: scale(0.85) rotate(-8deg); }
+      100% { transform: scale(0.75); filter: grayscale(1) opacity(0.2); }
+    }
+    .heart-icon.just-lost {
+      animation: heartLost 0.5s ease-out forwards;
+    }
+
     @keyframes scoreBump {
       0% { transform: translateY(-50%) scale(1); }
       45% { transform: translateY(-50%) scale(1.18); }
@@ -952,9 +979,12 @@
     #hud-lives-badge,
     #hud-score-badge,
     #hud-time-badge,
-    #hud-best-badge,
-    .heart-icon {
+    #hud-best-badge {
       filter: brightness(1) !important;
+    }
+    /* heart-icon dipisah — biar .heart-icon.lost bisa override tanpa perlu !important */
+    .heart-icon {
+      filter: brightness(1);
     }
 
     /* btn_play punya drop-shadow intentional — tambahin brightness(1) di depan */
@@ -997,6 +1027,7 @@
 
 <div id="game-wrapper">
   <div id="game-scene">
+    <div id="miss-flash"></div>
 
     <!-- ===== COVER SCREEN (inside game coordinate system 1080×1920) ===== -->
     <div id="cover-screen">
@@ -1601,8 +1632,28 @@ function onMiss() {
   food.vy = Math.max(4.2, Math.min(food.vy, 6.2));
   lives--;
   combo = 0;
-  // Update hearts langsung — jangan tunggu food jatuh ke y>1304
-  updateHearts();
+
+  // Animasi heart yang baru hilang (index = lives setelah dikurangi)
+  const lostHeart = hearts[lives];
+  if (lostHeart) {
+    lostHeart.classList.remove('just-lost');
+    void lostHeart.offsetWidth; // force reflow biar animasi restart
+    lostHeart.classList.add('just-lost');
+    // Setelah animasi selesai, apply state .lost permanen
+    setTimeout(() => {
+      lostHeart.classList.remove('just-lost');
+      updateHearts();
+    }, 520);
+  }
+
+  // Red flash di seluruh layar
+  const flash = document.getElementById('miss-flash');
+  if (flash) {
+    flash.classList.remove('show');
+    void flash.offsetWidth;
+    flash.classList.add('show');
+  }
+
   showMissFeedback();
   shakeScene();
   playMissSound();
