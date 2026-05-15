@@ -268,8 +268,8 @@
       position: absolute;
       left: 414px;
       top: 542px;
-      width: 180px;
-      height: 190px;
+      width: 193px;
+      height: 203px;
       z-index: 45;   /* di depan projectile (z=40) */
     }
 
@@ -327,10 +327,10 @@
     /* shadow under container */
     #container-shadow {
       position: absolute;
-      left: 396px;
+      left: 383px;
       top: 612px;
-      width: 214px;
-      height: 120px;
+      width: 255px;
+      height: 143px;
       z-index: 28;
     }
 
@@ -1231,7 +1231,7 @@ let bestRunTime = loadBestTime();
 
 // Container movement
 let containerX  = 414;   // current x position (left edge)
-const CONTAINER_W    = 180;
+const CONTAINER_W    = 193;
 const CONTAINER_MIN  = 60;
 const CONTAINER_MAX  = GAME_W - CONTAINER_W - 60;
 let containerDir= 1;     // 1 = right, -1 = left
@@ -1321,7 +1321,7 @@ function runIntro() {
 function setupContainerPosition() {
   contArea.style.left = containerX + 'px';
   const shadow = document.getElementById('container-shadow');
-  shadow.style.left = (containerX - 18) + 'px';
+  shadow.style.left = (containerX - 31) + 'px';
 }
 
 // =====================================================
@@ -1528,7 +1528,7 @@ function moveContainer(scale = 1) {
 
   contArea.style.left = containerX + 'px';
   const shadow = document.getElementById('container-shadow');
-  shadow.style.left = (containerX - 18) + 'px';
+  shadow.style.left = (containerX - 31) + 'px';
 }
 
 // =====================================================
@@ -1565,7 +1565,7 @@ function updateFoodProjectile(scale = 1) {
   const cLeft  = containerX - 40;
   const cRight = containerX + CONTAINER_W + 40;
   const cTop   = WADAH_Y - 100;
-  const cBot   = WADAH_Y + 65;
+  const cBot   = WADAH_Y + 70;
 
   // No snap assist — food terbang lurus sesuai arah tap
 
@@ -1600,19 +1600,19 @@ function onDimsumScored() {
     updateDots();
 
     if (inWadah >= 3) {
+      isThrowing = true; // lock — cegah throw selama celebration 1200ms
       score += 100;
       totalMade++;
-      // updateScore & bumpScore dipanggil dari dalam showCoinPopup saat koin pertama tiba
       showCoinPopup();
       playCoinSound();
-      containerSpeed = Math.min(containerSpeed + 0.2, 5.5); // naik pelan, max 5.5
+      containerSpeed = Math.min(containerSpeed + 0.2, 5.5);
+      scheduleSpawn(1200); // pakai scheduleSpawn biar bisa di-cancel kalau perlu
       setTimeout(() => {
         if (!gameActive) return;
         inWadah = 0;
         currentFood = (currentFood + 1) % FOOD_TYPES.length;
         updateSlots();
         updateDots();
-        spawnFood();
       }, 1200);
       return;
     }
