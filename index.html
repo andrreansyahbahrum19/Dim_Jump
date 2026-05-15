@@ -927,6 +927,39 @@
       60%       { transform: scale(1.04) translateY(-10px); }
     }
 
+    /* ===== ANDROID CHROME AUTO-DARK FIX ===== */
+    /*
+      Chrome Android won't apply its "Smart Dark" image inversion
+      if the element already has an explicit filter declared.
+      Setting filter: brightness(1) is a no-op visually,
+      but it "claims" the filter slot so Chrome can't override.
+    */
+    #hud-lives-badge,
+    #hud-score-badge,
+    #hud-time-badge,
+    #hud-best-badge,
+    .heart-icon {
+      filter: brightness(1) !important;
+    }
+
+    /* btn_play punya drop-shadow intentional — tambahin brightness(1) di depan */
+    #btn-play {
+      filter: brightness(1) drop-shadow(0 16px 48px rgba(255,60,140,0.7)) !important;
+    }
+    #btn-play:active {
+      filter: brightness(1) drop-shadow(0 8px 24px rgba(255,60,140,0.5)) !important;
+    }
+
+    /* Cover food decorations */
+    .cover-food {
+      filter: brightness(1) drop-shadow(0 16px 40px rgba(0,0,0,0.35)) !important;
+    }
+
+    /* Cover art image */
+    #cover-art {
+      filter: brightness(1) !important;
+    }
+
     /* ===== DARK MODE OVERRIDE — paksa semua tetap light ===== */
     @media (prefers-color-scheme: dark) {
       html, body, #game-wrapper, #game-scene {
