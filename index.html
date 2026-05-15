@@ -1192,7 +1192,7 @@ const CONTAINER_W    = 180;
 const CONTAINER_MIN  = 60;
 const CONTAINER_MAX  = GAME_W - CONTAINER_W - 60;
 let containerDir= 1;     // 1 = right, -1 = left
-let containerSpeed = 4;
+let containerSpeed = 2.5;
 
 // Tap-to-shoot — no joystick state needed
 let audioCtx = null;
@@ -1237,7 +1237,7 @@ function initGame() {
   gameActive = false; introActive = true; isAiming = false; isThrowing = false; containerMoving = true;
   containerX = 414;
   containerDir = 1;
-  containerSpeed = 4;
+  containerSpeed = 2.5;
   currentFood = 0;
   updateScore();
   updateTimer();
@@ -1446,15 +1446,13 @@ function gameLoop(ts = 0) {
 function moveContainer() {
   containerX += containerDir * containerSpeed;
 
-  // Bounce with slight randomness
+  // Bounce — speed konsisten, tidak random
   if (containerX >= CONTAINER_MAX) {
     containerX = CONTAINER_MAX;
     containerDir = -1;
-    containerSpeed = 3.5 + Math.random() * 2;
   } else if (containerX <= CONTAINER_MIN) {
     containerX = CONTAINER_MIN;
     containerDir = 1;
-    containerSpeed = 3.5 + Math.random() * 2;
   }
 
   contArea.style.left = containerX + 'px';
@@ -1499,11 +1497,11 @@ function updateFoodProjectile() {
     return;
   }
 
-  // Check container hit — nyentuh tepi wadah = masuk (toleransi ±25px dari tepi)
-  const cLeft  = containerX - 25;
-  const cRight = containerX + CONTAINER_W + 25;
-  const cTop   = WADAH_Y - 80;
-  const cBot   = WADAH_Y + 55;
+  // Check container hit — nyentuh tepi wadah = masuk (toleransi ±40px dari tepi)
+  const cLeft  = containerX - 40;
+  const cRight = containerX + CONTAINER_W + 40;
+  const cTop   = WADAH_Y - 100;
+  const cBot   = WADAH_Y + 65;
 
   // No snap assist — food terbang lurus sesuai arah tap
 
@@ -1543,7 +1541,7 @@ function onDimsumScored() {
       // updateScore & bumpScore dipanggil dari dalam showCoinPopup saat koin pertama tiba
       showCoinPopup();
       playCoinSound();
-      containerSpeed += 0.5; // gets slightly faster each wadah
+      containerSpeed = Math.min(containerSpeed + 0.2, 5.5); // naik pelan, max 5.5
       setTimeout(() => {
         if (!gameActive) return;
         inWadah = 0;
