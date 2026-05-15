@@ -1116,13 +1116,24 @@
 // =====================================================
 //  SCALE GAME TO FIT VIEWPORT
 // =====================================================
+// Cache scene transform info — diupdate saat resize saja, bukan tiap tap
+let _sceneScale   = 1;
+let _sceneOffsetX = 0;
+let _sceneOffsetY = 0;
+
 function scaleGame() {
   const wrapper = document.getElementById('game-wrapper');
   const scene   = document.getElementById('game-scene');
   const vw = wrapper.clientWidth;
   const vh = wrapper.clientHeight;
-  const scale = Math.min(vw / 1080, vh / 1920);
-  scene.style.transform = `scale(${scale})`;
+  _sceneScale = Math.min(vw / 1080, vh / 1920);
+  scene.style.transform = `scale(${_sceneScale})`;
+  // Update cached offset (setelah transform applied, pakai setTimeout biar browser selesai render)
+  setTimeout(() => {
+    const r = wrapper.getBoundingClientRect();
+    _sceneOffsetX = r.left;
+    _sceneOffsetY = r.top;
+  }, 0);
 }
 window.addEventListener('resize', scaleGame);
 scaleGame();
@@ -1177,6 +1188,7 @@ let gameActive  = false;
 let introActive = false;
 let isAiming    = false;
 let isThrowing  = false;
+let spawnTimer  = null; // track pending spawnFood timeout
 let containerMoving = false;
 let foodQueue   = [];
 let currentFood = 0;
@@ -1330,13 +1342,10 @@ const WADAH_Y      = 542;
 //  TAP INPUT HELPER
 // =====================================================
 function getScenePos(clientX, clientY) {
-  const wrapper = document.getElementById('game-wrapper');
-  const scene   = document.getElementById('game-scene');
-  const rect    = wrapper.getBoundingClientRect();
-  const scale   = scene.getBoundingClientRect().width / 1080;
+  // Pakai cached values — zero layout reflow
   return {
-    x: (clientX - rect.left) / scale,
-    y: (clientY - rect.top)  / scale
+    x: (clientX - _sceneOffsetX) / _sceneScale,
+    y: (clientY - _sceneOffsetY) / _sceneScale
   };
 }
 
@@ -1370,9 +1379,22 @@ document.addEventListener('pointerdown', onTap);
 // =====================================================
 //  LAUNCH FOOD
 // =====================================================
+function scheduleSpawn(delay) {
+  clearTimeout(spawnTimer);
+  spawnTimer = setTimeout(() => { if (gameActive) spawnFood(); }, delay);
+}
+
 function launchFood(targetX) {
   if (isThrowing || !gameActive) return;
   isThrowing = true;
+
+  // Cancel pending spawn — cegah foodConEl muncul saat food masih terbang
+  clearTimeout(spawnTimer);
+
+  // Reset state dari throw sebelumnya — cegah stale flags
+  food.missing          = false;
+  food.missFeedbackShown = false;
+
   foodConEl.style.display = 'none';
   startBacksound();
   playThrowSound(0.8);
@@ -1398,22 +1420,35 @@ function launchFood(targetX) {
   food.el = createFoodProjectile();
 }
 
-function createFoodProjectile() {
+// Pre-create food projectile element sekali — reuse, zero DOM alloc saat lempar
+const _foodProjEl = (() => {
   const el = document.createElement('img');
-  el.src = FOOD_TYPES[currentFood];
   el.style.cssText = `
     position: absolute;
     width: 215px; height: 215px;
     object-fit: contain;
     z-index: 40;
-    left: ${food.x - 107.5}px;
-    top:  ${food.y - 107.5}px;
+    display: none;
     filter: none;
     transition: none;
     pointer-events: none;
   `;
   document.getElementById('game-scene').appendChild(el);
   return el;
+})();
+
+function createFoodProjectile() {
+  // Reset semua state dari throw sebelumnya — transition harus 'none' dulu
+  // sebelum set property lain, biar tidak kena carry-over animation
+  _foodProjEl.style.transition = 'none';
+  _foodProjEl.style.transform  = 'scale(1)';
+  _foodProjEl.style.opacity    = '1';
+  _foodProjEl.style.zIndex     = '40';
+  _foodProjEl.style.left       = (food.x - 107.5) + 'px';
+  _foodProjEl.style.top        = (food.y - 107.5) + 'px';
+  _foodProjEl.src              = FOOD_TYPES[currentFood];
+  _foodProjEl.style.display    = 'block';
+  return _foodProjEl;
 }
 
 // =====================================================
@@ -1491,13 +1526,6 @@ function updateFoodProjectile(scale = 1) {
   }
 
   if (food.missing) {
-    if (!food.missFeedbackShown && food.y > 1304) {
-      food.missFeedbackShown = true;
-      updateHearts();
-      showMissFeedback();
-      shakeScene();
-      playMissSound();
-    }
     if (food.y > GAME_H + 220) finishMissFall();
     return;
   }
@@ -1558,7 +1586,7 @@ function onDimsumScored() {
       return;
     }
 
-    setTimeout(() => { if (gameActive) spawnFood(); }, 300);
+    scheduleSpawn(300);
   });
 }
 
@@ -1573,6 +1601,11 @@ function onMiss() {
   food.vy = Math.max(4.2, Math.min(food.vy, 6.2));
   lives--;
   combo = 0;
+  // Update hearts langsung — jangan tunggu food jatuh ke y>1304
+  updateHearts();
+  showMissFeedback();
+  shakeScene();
+  playMissSound();
 }
 
 function finishMissFall() {
@@ -1584,7 +1617,7 @@ function finishMissFall() {
     endGame();
     return;
   }
-  setTimeout(() => { if (gameActive) spawnFood(); }, 180);
+  scheduleSpawn(180);
 }
 
 function animateFoodIntoContainer(done) {
@@ -1773,7 +1806,10 @@ function startBacksound() {
 
 function removeFoodProjectile() {
   if (food.el) {
-    food.el.remove();
+    food.el.style.transition = 'none';
+    food.el.style.transform  = 'scale(1)';
+    food.el.style.opacity    = '1';
+    food.el.style.display    = 'none';
     food.el = null;
   }
   food.active = false;
