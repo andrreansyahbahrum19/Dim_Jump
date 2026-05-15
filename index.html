@@ -2,11 +2,25 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <meta name="color-scheme" content="light only">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Dimsum Gacoan 🥟</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
   <style>
+    /* ===== FORCE LIGHT MODE — no dark mode allowed ===== */
+    html {
+      color-scheme: light only;
+      -webkit-color-scheme: light;
+      forced-color-adjust: none;
+      -webkit-forced-color-adjust: none;
+    }
+    /* Prevent browser auto-dark mode inversion on the wrapper */
+    #game-wrapper, #game-scene {
+      forced-color-adjust: none;
+      -webkit-forced-color-adjust: none;
+    }
+
     @font-face {
       font-family: 'Guess Who';
       src: local('Guess Who'), local('GuessWho');
@@ -15,6 +29,7 @@
 
     body {
       background: #111827;
+      color: #ffffff;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -910,6 +925,23 @@
       0%, 100% { transform: scale(1)    translateY(0);    }
       40%       { transform: scale(1.06) translateY(-14px); }
       60%       { transform: scale(1.04) translateY(-10px); }
+    }
+
+    /* ===== DARK MODE OVERRIDE — paksa semua tetap light ===== */
+    @media (prefers-color-scheme: dark) {
+      html, body, #game-wrapper, #game-scene {
+        background-color: #111827 !important;
+        color: #ffffff !important;
+      }
+      /* HUD text tetap navy gelap supaya readable di atas badge kuning */
+      #score-value, #timer-value, #best-value {
+        color: #0d2d6e !important;
+        text-shadow: 0 2px 0 rgba(255,255,255,0.4) !important;
+      }
+      /* Cover screen tetap biru tua by design */
+      #cover-screen {
+        background: linear-gradient(175deg, #1a6fc4 0%, #0d3a8c 35%, #061d5c 65%, #030d30 100%) !important;
+      }
     }
   </style>
 </head>
