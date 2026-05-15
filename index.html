@@ -927,6 +927,21 @@
       60%       { transform: scale(1.04) translateY(-10px); }
     }
 
+    /* ===== TAP RIPPLE FEEDBACK ===== */
+    .tap-ripple {
+      position: absolute;
+      width: 90px; height: 90px;
+      border-radius: 50%;
+      border: 5px solid rgba(255, 212, 59, 0.95);
+      pointer-events: none;
+      z-index: 200;
+      animation: tapRipple 0.38s ease-out forwards;
+    }
+    @keyframes tapRipple {
+      0%   { transform: scale(0.3); opacity: 1; }
+      100% { transform: scale(2.8); opacity: 0; }
+    }
+
     /* ===== ANDROID CHROME AUTO-DARK FIX ===== */
     /*
       Chrome Android won't apply its "Smart Dark" image inversion
@@ -1039,17 +1054,7 @@
             filter="drop-shadow(0 0 10px rgba(255, 212, 59, 0.85))"/>
     </svg>
 
-    <!-- ===== AIM LINE ===== -->
-    <svg id="aim-line" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
-      <line id="aim-line-el"
-            x1="540" y1="1375"
-            x2="540" y2="1375"
-            stroke="rgba(255, 212, 59, 0.85)" stroke-width="7"
-            stroke-dasharray="18 16"/>
-    </svg>
-
-    <!-- ===== AIM DOT ===== -->
-    <div id="aim-dot" style="left:536px; top:1338px;"></div>
+    <!-- aim-line & aim-dot removed: new tap-to-shoot mechanic -->
 
     <!-- ===== FOOD ITEM SHADOW ===== -->
     <img id="food-shadow" src="assets/Shadow makanan.svg" alt="">
@@ -1072,16 +1077,7 @@
       </div>
     </div>
 
-    <!-- ===== JOYSTICK ===== -->
-    <img id="joystick-base" src="assets/Joystick_bawah.svg" alt="">
-    <div id="joystick-knob">
-      <img id="joystick-knob-img" src="assets/Joystick_atas.svg" alt="">
-    </div>
-
-    <!-- ===== LAUNCH BUTTON ===== -->
-    <div id="launch-btn">
-      <div id="launch-btn-text">LEMPAR!</div>
-    </div>
+    <!-- joystick & launch-btn removed: new tap-to-shoot mechanic -->
 
     <!-- ===== FOOD COUNTER (dimsum in wadah) ===== -->
     <div id="food-counter">
@@ -1198,13 +1194,7 @@ const CONTAINER_MAX  = GAME_W - CONTAINER_W - 60;
 let containerDir= 1;     // 1 = right, -1 = left
 let containerSpeed = 4;
 
-// Joystick state
-let aimStart = { x: 536, y: 1338 };
-let aimTarget = { x: 504, y: 618 };
-let aimDragStart = { x: 536, y: 1338 };
-let aimPower = 0;
-const AIM_MIN_POWER = 0.08;
-const THROW_TARGET_Y = 618;
+// Tap-to-shoot — no joystick state needed
 let audioCtx = null;
 let musicTimer = null;
 let musicStep = 0;
@@ -1228,17 +1218,12 @@ const foodImgEl  = document.getElementById('food-img');
 const foodConEl  = document.getElementById('food-item-container');
 const contArea   = document.getElementById('container-area');
 const containerImgEl = document.getElementById('container-img');
-const trajPath   = document.getElementById('traj-path');
-const aimLineEl  = document.getElementById('aim-line-el');
-const aimDotEl   = document.getElementById('aim-dot');
 const overlay    = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const finalScore = document.getElementById('final-score');
 const finalTime = document.getElementById('final-time');
 const slots      = [document.getElementById('slot0'), document.getElementById('slot1'), document.getElementById('slot2')];
 const dots       = [document.getElementById('dot0'),  document.getElementById('dot1'),  document.getElementById('dot2')];
-const joystickKnob = document.getElementById('joystick-knob');
-const launchBtn  = document.getElementById('launch-btn');
 const foodShadowEl = document.getElementById('food-shadow');
 
 // =====================================================
@@ -1249,7 +1234,7 @@ function initGame() {
   elapsedMs = 0;
   runStartTime = 0;
   combo = 0;
-  gameActive = false; introActive = true; isAiming = false; isThrowing = false; containerMoving = false;
+  gameActive = false; introActive = true; isAiming = false; isThrowing = false; containerMoving = true;
   containerX = 414;
   containerDir = 1;
   containerSpeed = 4;
@@ -1260,7 +1245,6 @@ function initGame() {
   updateHearts();
   updateSlots();
   updateDots();
-  hideAimGuide();
   overlay.classList.remove('show');
   setupContainerPosition();
   spawnFood();
@@ -1324,7 +1308,6 @@ function spawnFood() {
   });
   updateFoodUI();
   updateQueueUI();
-  updateTrajectory();
 }
 
 function updateFoodUI() {
@@ -1337,74 +1320,14 @@ function updateQueueUI() {
 }
 
 // =====================================================
-//  TRAJECTORY + AIM
+//  CONSTANTS
 // =====================================================
 const FOOD_START_X = 540;
 const FOOD_START_Y = 1660;
 const WADAH_Y      = 542;
 
-function updateTrajectory() {
-  const startX = FOOD_START_X, startY = FOOD_START_Y;
-  const targetX = containerX + CONTAINER_W / 2;
-  const targetY = WADAH_Y + 60; // tengah wadah
-  // Arc: controlpoint di antara start dan target, sedikit ke kiri/kanan
-  const cx = startX + (targetX - startX) * 0.5;
-  const cy = Math.min(startY, targetY) - 200;  // lekukan ke atas
-  trajPath.setAttribute('d', `M${startX},${startY} Q${cx},${cy} ${targetX},${targetY}`);
-
-  // Update aim dot ke posisi food
-  aimDotEl.style.left = startX + 'px';
-  aimDotEl.style.top  = startY + 'px';
-}
-
-function showAimGuide() {
-  document.getElementById('trajectory-svg').classList.add('show');
-  document.getElementById('aim-line').classList.add('show');
-  aimDotEl.classList.add('show');
-}
-
-function hideAimGuide() {
-  document.getElementById('trajectory-svg').classList.remove('show');
-  document.getElementById('aim-line').classList.remove('show');
-  aimDotEl.classList.remove('show');
-  aimLineEl.setAttribute('x1', FOOD_START_X);
-  aimLineEl.setAttribute('y1', FOOD_START_Y);
-  aimLineEl.setAttribute('x2', FOOD_START_X);
-  aimLineEl.setAttribute('y2', FOOD_START_Y);
-}
-
-function updateAimFromPointer() {
-  const velocity = getAssistedThrowVelocity(aimPower);
-  const startX = FOOD_START_X, startY = FOOD_START_Y;
-  const preview = [];
-
-  for (let i = 0; i <= velocity.frames; i += 3) {
-    const t = i;
-    preview.push({
-      x: startX + velocity.vx * t,
-      y: startY + velocity.vy * t + 0.5 * GRAVITY * t * t
-    });
-  }
-
-  trajPath.setAttribute('d', preview.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' '));
-
-  aimLineEl.setAttribute('x1', startX);
-  aimLineEl.setAttribute('y1', startY);
-  aimLineEl.setAttribute('x2', velocity.targetX);
-  aimLineEl.setAttribute('y2', velocity.targetY);
-}
-
-function getAssistedThrowVelocity(power = aimPower) {
-  const targetX = Math.max(containerX + 16, Math.min(containerX + CONTAINER_W - 16, aimTarget.x));
-  const targetY = Math.max(WADAH_Y + 28, Math.min(WADAH_Y + 92, aimTarget.y));
-  const frames = 72 - Math.max(power, AIM_MIN_POWER) * 12;
-  const vx = (targetX - FOOD_START_X) / frames;
-  const vy = (targetY - FOOD_START_Y - 0.5 * GRAVITY * frames * frames) / frames;
-  return { vx, vy, targetX, targetY, frames };
-}
-
 // =====================================================
-//  JOYSTICK INPUT
+//  TAP INPUT HELPER
 // =====================================================
 function getScenePos(clientX, clientY) {
   const wrapper = document.getElementById('game-wrapper');
@@ -1417,95 +1340,60 @@ function getScenePos(clientX, clientY) {
   };
 }
 
-function onPointerDown(e) {
+// =====================================================
+//  TAP TO SHOOT — sentuh layar = arah lemparan
+// =====================================================
+function showTapRipple(x, y) {
+  const el = document.createElement('div');
+  el.className = 'tap-ripple';
+  el.style.left = (x - 45) + 'px';
+  el.style.top  = (y - 45) + 'px';
+  document.getElementById('game-scene').appendChild(el);
+  setTimeout(() => el.remove(), 420);
+}
+
+function onTap(e) {
   if (!gameActive || introActive || isThrowing) return;
+  e.preventDefault();
   startBacksound();
   const pos = getScenePos(e.clientX, e.clientY);
-  if (pos.y < 520) return;
-  isAiming = true;
-  containerMoving = true;
-  aimDragStart = pos;
-  showAimGuide();
-  updateAimTarget(pos);
+  // Abaikan tap di area HUD (atas)
+  if (pos.y < 300) return;
+  showTapRipple(pos.x, pos.y);
+  // X posisi tap langsung jadi target X lemparan (clamp ke area main)
+  const targetX = Math.max(80, Math.min(GAME_W - 80, pos.x));
+  launchFood(targetX);
 }
 
-function onPointerMove(e) {
-  if (!isAiming || isThrowing) return;
-  const pos = getScenePos(e.clientX, e.clientY);
-  updateAimTarget(pos);
-}
-
-function onPointerUp(e) {
-  if (!isAiming) return;
-  isAiming = false;
-  const shouldLaunch = aimPower > AIM_MIN_POWER;
-  const releasePower = aimPower;
-  hideAimGuide();
-  foodConEl.style.transform = 'scale(1)';
-  if (shouldLaunch) launchFood(releasePower);
-  aimPower = 0;
-}
-
-function onPointerCancel() {
-  if (!isAiming) return;
-  isAiming = false;
-  aimPower = 0;
-  foodConEl.style.transform = 'scale(1)';
-  hideAimGuide();
-}
-
-function updateAimTarget(pos) {
-  const dragX = pos.x - aimDragStart.x;
-  const pullUp = Math.max(0, aimDragStart.y - pos.y);
-  const lead = containerMoving ? containerDir * containerSpeed * 16 : 0;
-  const basketCenter = containerX + CONTAINER_W / 2;
-  aimPower = Math.max(0.58, Math.min(1, 0.62 + pullUp / 520));
-  const rawX = basketCenter + lead + dragX * 0.16;
-  const targetX = Math.max(containerX + 16, Math.min(containerX + CONTAINER_W - 16, rawX));
-  const targetY = WADAH_Y + 48;
-  aimTarget = { x: targetX, y: targetY };
-  aimDotEl.style.left = targetX + 'px';
-  aimDotEl.style.top = targetY + 'px';
-  foodConEl.style.transform = `scale(${1 - aimPower * 0.04}) translateY(${aimPower * 6}px)`;
-  updateAimFromPointer();
-}
-
-// Touch events
-document.addEventListener('pointerdown', onPointerDown);
-document.addEventListener('pointermove', onPointerMove);
-document.addEventListener('pointerup',   onPointerUp);
-document.addEventListener('pointercancel', onPointerCancel);
-
-// Launch button
-document.getElementById('launch-btn').addEventListener('click', () => {
-  if (!gameActive || isThrowing) return;
-  aimTarget = { x: containerX + CONTAINER_W / 2, y: THROW_TARGET_Y };
-  launchFood(0.75);
-});
+document.addEventListener('pointerdown', onTap);
 
 // =====================================================
 //  LAUNCH FOOD
 // =====================================================
-function launchFood(power = aimPower) {
+function launchFood(targetX) {
   if (isThrowing || !gameActive) return;
   isThrowing = true;
-  hideAimGuide();
   foodConEl.style.display = 'none';
   startBacksound();
-  playThrowSound(power);
+  playThrowSound(0.8);
 
-  // Shadow fade out pas food dilempar — tidak muncul lagi sampai respawn
+  // Shadow fade out
   foodShadowEl.style.transition = 'transform 0.35s ease-in, opacity 0.3s ease-in';
   foodShadowEl.style.transform = 'scale(0.05)';
   foodShadowEl.style.opacity = '0';
   setTimeout(() => { foodShadowEl.style.transition = 'none'; }, 380);
 
-  const velocity = getAssistedThrowVelocity(Math.max(power, AIM_MIN_POWER));
+  // Hitung velocity berdasarkan targetX — fixed frames = 72
+  const THROW_FRAMES = 72;
+  const tX = Math.max(80, Math.min(GAME_W - 80, targetX));
+  const tY = WADAH_Y + 48;
+  const vx = (tX - FOOD_START_X) / THROW_FRAMES;
+  const vy = (tY - FOOD_START_Y - 0.5 * GRAVITY * THROW_FRAMES * THROW_FRAMES) / THROW_FRAMES;
 
   food.x  = FOOD_START_X;
   food.y  = FOOD_START_Y;
-  food.vx = velocity.vx;
-  food.vy = velocity.vy;
+  food.vx = vx;
+  food.vy = vy;
   food.active = true;
   food.el = createFoodProjectile();
 }
@@ -1543,8 +1431,8 @@ function gameLoop(ts = 0) {
     updateTimer();
   }
 
-  // Move container
-  if (containerMoving) moveContainer();
+  // Container selalu gerak saat game aktif
+  moveContainer();
 
   // Update food projectile
   if (food.active) {
@@ -1572,7 +1460,6 @@ function moveContainer() {
   contArea.style.left = containerX + 'px';
   const shadow = document.getElementById('container-shadow');
   shadow.style.left = (containerX - 18) + 'px';
-  if (isAiming) updateTrajectory();
 }
 
 // =====================================================
@@ -1612,16 +1499,13 @@ function updateFoodProjectile() {
     return;
   }
 
-  // Check container hit — wadah ada di atas meja
-  const cLeft  = containerX - 110;
-  const cRight = containerX + CONTAINER_W + 110;
-  const cTop   = WADAH_Y - 160;
-  const cBot   = WADAH_Y + 65;
+  // Check container hit — nyentuh tepi wadah = masuk (toleransi ±25px dari tepi)
+  const cLeft  = containerX - 25;
+  const cRight = containerX + CONTAINER_W + 25;
+  const cTop   = WADAH_Y - 80;
+  const cBot   = WADAH_Y + 55;
 
-  if (food.vy > 0 && food.y > WADAH_Y - 240 && food.y < WADAH_Y + 90) {
-    const basketCenter = containerX + CONTAINER_W / 2;
-    food.x += (basketCenter - food.x) * 0.22;
-  }
+  // No snap assist — food terbang lurus sesuai arah tap
 
   if (food.vy > 0 && food.x > cLeft && food.x < cRight && food.y > cTop && food.y < cBot) {
     // HIT!
