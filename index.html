@@ -824,52 +824,113 @@
     }
 
     /* ==================== GAME OVER / WIN OVERLAY ==================== */
+    /* ==================== ENDING SCREEN ==================== */
     #overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.75);
       display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
       z-index: 200;
+      overflow: hidden;
     }
 
-    #overlay.show { display: flex; }
+    #overlay.show { display: block; }
 
-    #overlay-title {
-      font-size: 100px;
-      font-weight: 900;
-      color: #fff;
-      text-shadow: 0 4px 20px rgba(0,0,0,0.5);
-      margin-bottom: 40px;
+    /* Background full-screen */
+    .ending-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
+
+    /* Content layer di atas background */
+    .ending-content {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 80px;
+      box-sizing: border-box;
+    }
+
+    /* Logo ME GacoaN — no shadow */
+    .ending-logo {
+      width: 220px;
+      margin-bottom: 28px;
+    }
+
+    /* Card wrapper — relative container untuk overlay stats + button */
+    .ending-card-wrap {
+      position: relative;
+      width: 820px;
+    }
+
+    .ending-label-img {
+      width: 100%;
+      display: block;
+    }
+
+    /* Teks SKOR & WAKTU overlaid di atas blue area card */
+    /* Blue card area di SVG mulai y=410 dari total 1091 = 37.6% */
+    /* Target skor ~58%, waktu ~72% dari top card */
+    .ending-stats {
+      position: absolute;
+      top: 58%;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+    }
+
+    /* Hidden — tetap ada di DOM untuk JS compatibility */
+    #overlay-title { display: none !important; }
 
     #overlay-score {
-      font-size: 60px;
-      color: #FFD700;
-      margin-bottom: 18px;
+      font-family: 'Guess Who', 'Lilita One', 'Arial Black', sans-serif;
+      font-size: 108px;
+      font-weight: 900;
+      color: #FD3589;
+      letter-spacing: 2px;
+      line-height: 1;
+      -webkit-text-stroke: 7px white;
+      paint-order: stroke fill;
     }
 
     #overlay-time {
-      font-size: 46px;
-      color: #ffffff;
-      margin-bottom: 70px;
-      font-weight: 800;
-      text-shadow: 0 3px 12px rgba(0,0,0,0.45);
+      font-family: 'Guess Who', 'Lilita One', 'Arial Black', sans-serif;
+      font-size: 70px;
+      font-weight: 900;
+      color: #14296C;
+      letter-spacing: 2px;
+      line-height: 1;
+      -webkit-text-stroke: 6px white;
+      paint-order: stroke fill;
     }
 
+    /* Button — di bawah card, posisi absolute */
     #btn-restart {
-      background: linear-gradient(135deg, #FF6B35, #FF3366);
-      border: none;
-      border-radius: 60px;
-      padding: 40px 120px;
-      font-size: 60px;
-      font-weight: 900;
-      color: white;
+      position: absolute;
+      bottom: -135px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 580px;
       cursor: pointer;
-      box-shadow: 0 8px 32px rgba(255,80,80,0.5);
+      display: block;
+      background: none;
+      border: none;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s ease, filter 0.1s ease;
     }
+
+    #btn-restart:hover  { transform: translateX(-50%) scale(1.04); }
+    #btn-restart:active { transform: translateX(-50%) scale(0.96); filter: brightness(0.9); }
 
     /* ==================== LAUNCH BUTTON (visible on desktop) ==================== */
     #launch-btn {
@@ -1181,7 +1242,7 @@
     <div id="cover-screen">
 
       <!-- Cover art (lo taruh file dimjump_cover.png di assets → langsung override fallback) -->
-      <img id="cover-art" src="assets/dimjump_cover.png" alt="Dim Jump"
+      <img id="cover-art" src="assets/dimjump_cover.webp" alt="Dim Jump"
            onerror="this.style.display='none'">
 
       <!-- PLAY button -->
@@ -1192,7 +1253,7 @@
     </div>
 
     <!-- ===== BACKGROUND FULL (restaurant + table + floor all-in-one) ===== -->
-    <img id="bg-full" src="assets/bg_fix.svg" alt="">
+    <img id="bg-full" src="assets/bg_fix.webp" alt="">
     <img id="bg-floor-overlay" src="assets/bg_floor_overlay.svg" alt="">
 
     <!-- ===== HUD LIVES (kiri) ===== -->
@@ -1240,7 +1301,7 @@
 
     <!-- ===== MAIN FOOD ITEM ===== -->
     <div id="food-item-container">
-      <img id="food-img" src="assets/food_lumpia.png" alt="Dimsum">
+      <img id="food-img" src="assets/food_lumpia.webp" alt="Dimsum">
     </div>
 
     <!-- ===== CONTAINER SHADOW ===== -->
@@ -1248,7 +1309,7 @@
 
     <!-- ===== WADAH DIMSUM ===== -->
     <div id="container-area" class="intro-ready">
-      <img id="container-img" src="assets/Wadah dimsum.svg" alt="Wadah Dimsum">
+      <img id="container-img" src="assets/Wadah dimsum.webp" alt="Wadah Dimsum">
       <div id="container-slots">
         <div class="slot" id="slot0"></div>
         <div class="slot" id="slot1"></div>
@@ -1282,10 +1343,30 @@
     </div>
 
     <div id="overlay">
-      <div id="overlay-title">GAME OVER</div>
-      <div id="overlay-score">Skor: <span id="final-score">0</span></div>
-      <div id="overlay-time">Waktu: <span id="final-time">00:00</span></div>
-      <button id="btn-restart">Coba Lagi! 🥟</button>
+      <!-- Background ending -->
+      <img class="ending-bg" src="assets/ending_bg.webp" alt="">
+
+      <!-- Content layer -->
+      <div class="ending-content">
+
+        <!-- Logo ME GacoaN -->
+        <img class="ending-logo" src="assets/logo_game.svg" alt="ME GacoaN">
+
+        <!-- Card: DIM JUMP label + stats overlay + button -->
+        <div class="ending-card-wrap">
+          <img class="ending-label-img" src="assets/label_game.webp" alt="">
+          <div class="ending-stats">
+            <div id="overlay-score">SKOR : <span id="final-score">0</span></div>
+            <div id="overlay-time">WAKTU : <span id="final-time">00:00</span></div>
+          </div>
+          <!-- Button mepet bawah card -->
+          <img id="btn-restart" src="assets/btn_coba_lagi.svg" alt="Coba Lagi">
+        </div>
+
+      </div>
+
+      <!-- Hidden — tetap ada untuk JS compatibility -->
+      <div id="overlay-title" style="display:none"></div>
     </div>
 
   </div><!-- /game-scene -->
@@ -1346,17 +1427,17 @@ function loadBestTime() {
 const GAME_W  = 1080;
 const GAME_H  = 1920;
 const FOOD_TYPES = [
-  'assets/food_lumpia.png',   // lumpia goreng crispy
-  'assets/food_bola.png',     // bola goreng mayo
-  'assets/food_siumai.png',   // siu mai topping roe
-  'assets/food_mie.png'       // bola mie goreng
+  'assets/food_lumpia.webp',   // lumpia goreng crispy
+  'assets/food_bola.webp',     // bola goreng mayo
+  'assets/food_siumai.webp',   // siu mai topping roe
+  'assets/food_mie.webp'       // bola mie goreng
 ];
-const WADAH_EMPTY = 'assets/wadah_v2_empty.png';
+const WADAH_EMPTY = 'assets/wadah_v2_empty.webp';
 const WADAH_FILLED = [
-  ['assets/wadah_v2_lumpia_1.png', 'assets/wadah_v2_lumpia_2.png', 'assets/wadah_v2_lumpia_3.png'],
-  ['assets/wadah_v2_bola_1.png', 'assets/wadah_v2_bola_2.png', 'assets/wadah_v2_bola_3.png'],
-  ['assets/wadah_v2_siumai_1.png', 'assets/wadah_v2_siumai_2.png', 'assets/wadah_v2_siumai_3.png'],
-  ['assets/wadah_v2_mie_1.png', 'assets/wadah_v2_mie_2.png', 'assets/wadah_v2_mie_3.png']
+  ['assets/wadah_v2_lumpia_1.webp', 'assets/wadah_v2_lumpia_2.webp', 'assets/wadah_v2_lumpia_3.webp'],
+  ['assets/wadah_v2_bola_1.webp', 'assets/wadah_v2_bola_2.webp', 'assets/wadah_v2_bola_3.webp'],
+  ['assets/wadah_v2_siumai_1.webp', 'assets/wadah_v2_siumai_2.webp', 'assets/wadah_v2_siumai_3.webp'],
+  ['assets/wadah_v2_mie_1.webp', 'assets/wadah_v2_mie_2.webp', 'assets/wadah_v2_mie_3.webp']
 ];
 
 let score       = 0;
@@ -1806,13 +1887,13 @@ function onDimsumScored() {
         containerSpeed = Math.min(containerSpeed + 2.5, 14.0);
         showLevelUpFeedback(newLevel);
       }
-      scheduleSpawn(1200); // pakai scheduleSpawn biar bisa di-cancel kalau perlu
       setTimeout(() => {
         if (!gameActive) return;
         inWadah = 0;
         currentFood = (currentFood + 1) % FOOD_TYPES.length;
         updateSlots();
         updateDots();
+        spawnFood();
       }, 1200);
       return;
     }
